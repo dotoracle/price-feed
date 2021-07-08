@@ -2,7 +2,7 @@
 pragma solidity >=0.6.6;
 
 
-import "../lib/SRAC.sol";
+import "../lib/access/SRAC.sol";
 import "../interfaces/IAccessControl.sol";
 import "../interfaces/IFlags.sol";
 

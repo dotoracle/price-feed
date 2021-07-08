@@ -4,7 +4,7 @@ pragma solidity ^0.7.0;
 import "../interfaces/IDataChecker.sol";
 import "../interfaces/IFlags.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../lib/CheckedMath.sol";
+import "../lib/math/CheckedMath.sol";
 
 /**
  * @title The Deviation Flagging Validator contract

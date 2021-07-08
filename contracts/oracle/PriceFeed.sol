@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "../lib/Median.sol";
-import "../lib/SafeMath128.sol";
-import "../lib/SafeMath32.sol";
-import "../lib/SafeMath64.sol";
+import "../lib/math/Median.sol";
+import "../lib/math/SafeMath128.sol";
+import "../lib/math/SafeMath32.sol";
+import "../lib/math/SafeMath64.sol";
 import "../interfaces/IPriceFeed.sol";
 import "./OracleFundManager.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
