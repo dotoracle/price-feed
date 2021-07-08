@@ -2,7 +2,7 @@
 pragma solidity >=0.6.0;
 
 import "./SWAC.sol";
-
+import "./EOACheck.sol";
 /**
  * @title SRAC
  * @notice Gives access to:
@@ -15,7 +15,7 @@ import "./SWAC.sol";
  * SWAC for that.
  */
 contract SRAC is SWAC {
-
+  using EOACheck for address;
   /**
    * @notice Returns the access of an address
    * @param _user The address to query
@@ -30,7 +30,7 @@ contract SRAC is SWAC {
     override
     returns (bool)
   {
-    return super.hasAccess(_user, _calldata) || _user == tx.origin;
+    return super.hasAccess(_user, _calldata) || _user.isCalledFromEOA();
   }
 
 }

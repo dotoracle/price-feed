@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./DataChecker.sol";
 import "./PFConfig.sol";
+import "../lib/access/EOACheck.sol";
 
 /**
  * @title The Prepaid Oracle contract
@@ -32,6 +33,7 @@ contract PriceFeed is
     using SafeMath64 for uint64;
     using SafeMath32 for uint32;
     using SafeERC20 for IERC20;
+    using EOACheck for address;
 
     struct Round {
         int256 answer;
@@ -524,7 +526,7 @@ contract PriceFeed is
             uint128 _paymentAmount
         )
     {
-        require(msg.sender == tx.origin, "off-chain reading only");
+        require(address(msg.sender).isCalledFromEOA(), "off-chain reading only");
 
         if (_queriedRoundId > 0) {
             Round storage round = rounds[_queriedRoundId];
