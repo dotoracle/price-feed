@@ -21,11 +21,11 @@ abstract contract OracleFundManager is OracleManager, Ownable {
     event AvailableFundsUpdated(uint256 indexed amount);
 
     /**
-     * @notice transfers the oracle's LINK to another address. Can only be called
+     * @notice transfers the oracle's DTO to another address. Can only be called
      * by the oracle's admin.
-     * @param _oracle is the oracle whose LINK is transferred
-     * @param _recipient is the address to send the LINK to
-     * @param _amount is the amount of LINK to send
+     * @param _oracle is the oracle whose DTO is transferred
+     * @param _recipient is the address to send the DTO to
+     * @param _amount is the amount of DTO to send
      */
     function withdrawPayment(
         address _oracle,
@@ -34,7 +34,7 @@ abstract contract OracleFundManager is OracleManager, Ownable {
     ) external {
         require(oracles[_oracle].admin == msg.sender, "only callable by admin");
 
-        // Safe to downcast _amount because the total amount of LINK is less than 2^128.
+        // Safe to downcast _amount because the total amount of DTO is less than 2^128.
         uint128 amount = uint128(_amount);
         uint128 available = oracles[_oracle].withdrawable;
         require(available >= amount, "insufficient withdrawable funds");
@@ -60,7 +60,7 @@ abstract contract OracleFundManager is OracleManager, Ownable {
     }
 
     /**
-     * @notice recalculate the amount of LINK available for payouts
+     * @notice recalculate the amount of DTO available for payouts
      */
     function updateAvailableFunds() public {
         Funds memory funds = recordedFunds;
@@ -76,7 +76,7 @@ abstract contract OracleFundManager is OracleManager, Ownable {
     }
 
     /**
-     * @notice query the available amount of LINK for an oracle to withdraw
+     * @notice query the available amount of DTO for an oracle to withdraw
      */
     function withdrawablePayment(address _oracle)
         external
@@ -87,9 +87,9 @@ abstract contract OracleFundManager is OracleManager, Ownable {
     }
 
     /**
-     * @notice transfers the owner's LINK to another address
-     * @param _recipient is the address to send the LINK to
-     * @param _amount is the amount of LINK to send
+     * @notice transfers the owner's DTO to another address
+     * @param _recipient is the address to send the DTO to
+     * @param _amount is the amount of DTO to send
      */
     function withdrawFunds(address _recipient, uint256 _amount)
         external

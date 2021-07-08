@@ -92,8 +92,8 @@ contract PriceFeed is
 
     /**
      * @notice set up the aggregator with initial configuration
-     * @param _dto The address of the LINK token
-     * @param _paymentAmount The amount paid of LINK paid to each oracle per submission, in wei (units of 10⁻¹⁸ LINK)
+     * @param _dto The address of the DTO token
+     * @param _paymentAmount The amount paid of DTO paid to each oracle per submission, in wei (units of 10⁻¹⁸ DTO)
      * @param _timeout is the number of seconds after the previous round that are
      * allowed to lapse before allowing an oracle to skip an unfinished round
      * @param _validator is an optional contract address for validating
@@ -491,7 +491,7 @@ contract PriceFeed is
     }
 
     /**
-     * @notice called through LINK's transferAndCall to update available funds
+     * @notice called through DTO's transferAndCall to update available funds
      * in the same transaction as the funds were transferred to the aggregator
      * @param _data is mostly ignored. It is checked for length, to be sure
      * nothing strange is passed in.

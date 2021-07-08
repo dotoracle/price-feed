@@ -1,3 +1,4 @@
+flatten
 artifacts
 cache
 node_modules
@@ -37,3 +38,4 @@ test-results.xml
 yarn-error.log
 .openzeppelin/unknown-31337.json
 package-lock.json
+flatten
