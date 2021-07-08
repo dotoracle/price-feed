@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-interface IDataValidate {
+interface IDataChecker {
   function validate(
     uint256 previousRoundId,
     int256 previousAnswer,

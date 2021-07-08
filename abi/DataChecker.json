@@ -39,6 +39,19 @@
   },
   {
     "inputs": [],
+    "name": "checker",
+    "outputs": [
+      {
+        "internalType": "contract IDataChecker",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "owner",
     "outputs": [
       {
@@ -61,11 +74,11 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_newValidator",
+        "name": "_checker",
         "type": "address"
       }
     ],
-    "name": "setValidator",
+    "name": "setChecker",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -81,19 +94,6 @@
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "validator",
-    "outputs": [
-      {
-        "internalType": "contract IDataValidate",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   }
 ]

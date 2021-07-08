@@ -10,8 +10,8 @@ import "./OracleFundManager.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./DataValidator.sol";
-import "./PriceFeedConfig.sol";
+import "./DataChecker.sol";
+import "./PFConfig.sol";
 
 /**
  * @title The Prepaid Oracle contract
@@ -23,9 +23,9 @@ import "./PriceFeedConfig.sol";
  */
 contract PriceFeed is
     IPriceFeed,
-    DataValidator,
+    DataChecker,
     OracleFundManager,
-    PriceFeedConfig
+    PFConfig
 {
     using SafeMath for uint256;
     using SafeMath128 for uint128;
@@ -114,10 +114,10 @@ contract PriceFeed is
         int256 _maxSubmissionValue,
         uint8 _decimals,
         string memory _description
-    ) public PriceFeedConfig(_minSubmissionValue, _maxSubmissionValue) {
+    ) public PFConfig(_minSubmissionValue, _maxSubmissionValue) {
         dtoToken = IERC20(_dto);
         updateFutureRounds(_paymentAmount, 0, 0, 0, _timeout);
-        setValidator(_validator);
+        setChecker(_validator);
         decimals = _decimals;
         description = _description;
         rounds[0].updatedAt = uint64(block.timestamp.sub(uint256(_timeout)));
@@ -577,7 +577,7 @@ contract PriceFeed is
     }
 
     function validateAnswer(uint32 _roundId, int256 _newAnswer) private {
-        IDataValidate av = validator; // cache storage reads
+        IDataChecker av = checker; // cache storage reads
         if (address(av) == address(0)) return;
 
         uint32 prevRound = _roundId.sub(1);

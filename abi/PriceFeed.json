@@ -440,6 +440,19 @@
   },
   {
     "inputs": [],
+    "name": "checker",
+    "outputs": [
+      {
+        "internalType": "contract IDataChecker",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "decimals",
     "outputs": [
       {
@@ -874,6 +887,19 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_checker",
+        "type": "address"
+      }
+    ],
+    "name": "setChecker",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "_requester",
         "type": "address"
       },
@@ -889,19 +915,6 @@
       }
     ],
     "name": "setRequesterPermissions",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_newValidator",
-        "type": "address"
-      }
-    ],
-    "name": "setValidator",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1021,19 +1034,6 @@
     "name": "updateFutureRounds",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "validator",
-    "outputs": [
-      {
-        "internalType": "contract IDataValidate",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

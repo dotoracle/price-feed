@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "../interfaces/IDataValidate.sol";
+import "../interfaces/IDataChecker.sol";
 import "../interfaces/IFlags.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../lib/CheckedMath.sol";
@@ -13,7 +13,7 @@ import "../lib/CheckedMath.sol";
  * threshold is passed then the validator raises a flag on the designated
  * flag contract.
  */
-contract DeviationFlaggingValidator is Ownable, IDataValidate {
+contract DeviationChecker is Ownable, IDataChecker {
   using CheckedMath for int256;
 
   uint32 constant public THRESHOLD_MULTIPLIER = 100000;

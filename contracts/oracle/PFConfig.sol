@@ -1,7 +1,7 @@
 pragma solidity ^0.7.0;
 
 
-contract PriceFeedConfig {
+contract PFConfig {
   int256 immutable public minSubmissionValue;
   int256 immutable public maxSubmissionValue;
   /**
