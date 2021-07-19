@@ -40,4 +40,5 @@ contract OracleManager {
     function getOracles() external view returns (address[] memory) {
         return oracleAddresses;
     }
+    
 }

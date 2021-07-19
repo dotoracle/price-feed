@@ -32,11 +32,6 @@
         "type": "int256"
       },
       {
-        "internalType": "uint8",
-        "name": "_decimals",
-        "type": "uint8"
-      },
-      {
         "internalType": "string",
         "name": "_description",
         "type": "string"
@@ -44,6 +39,19 @@
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "AddedAccess",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -81,6 +89,18 @@
       }
     ],
     "name": "AvailableFundsUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "CheckAccessDisabled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "CheckAccessEnabled",
     "type": "event"
   },
   {
@@ -188,6 +208,19 @@
       }
     ],
     "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "RemovedAccess",
     "type": "event"
   },
   {
@@ -311,6 +344,19 @@
   },
   {
     "inputs": [],
+    "name": "MIN_THRESHOLD_PERCENT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "RESERVE_ROUNDS",
     "outputs": [
       {
@@ -330,6 +376,19 @@
         "internalType": "uint32",
         "name": "",
         "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SUBMITTER_REWARD_VESTING_PERIOD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -370,6 +429,19 @@
       }
     ],
     "name": "acceptAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      }
+    ],
+    "name": "addAccess",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -440,12 +512,12 @@
   },
   {
     "inputs": [],
-    "name": "checker",
+    "name": "checkEnabled",
     "outputs": [
       {
-        "internalType": "contract IDataChecker",
+        "internalType": "bool",
         "name": "",
-        "type": "address"
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -453,12 +525,12 @@
   },
   {
     "inputs": [],
-    "name": "decimals",
+    "name": "checker",
     "outputs": [
       {
-        "internalType": "uint8",
+        "internalType": "contract IDataChecker",
         "name": "",
-        "type": "uint8"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -479,6 +551,13 @@
   },
   {
     "inputs": [],
+    "name": "disableAccessCheck",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "dtoToken",
     "outputs": [
       {
@@ -488,6 +567,13 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "enableAccessCheck",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -563,11 +649,6 @@
       },
       {
         "internalType": "uint256",
-        "name": "startedAt",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
         "name": "updatedAt",
         "type": "uint256"
       },
@@ -594,6 +675,30 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_calldata",
+        "type": "bytes"
+      }
+    ],
+    "name": "hasAccess",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -638,11 +743,6 @@
         "internalType": "int256",
         "name": "answer",
         "type": "int256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "startedAt",
-        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -785,21 +885,6 @@
         "type": "uint32"
       },
       {
-        "internalType": "int256",
-        "name": "_latestSubmission",
-        "type": "int256"
-      },
-      {
-        "internalType": "uint64",
-        "name": "_startedAt",
-        "type": "uint64"
-      },
-      {
-        "internalType": "uint64",
-        "name": "_timeout",
-        "type": "uint64"
-      },
-      {
         "internalType": "uint128",
         "name": "_availableFunds",
         "type": "uint128"
@@ -846,27 +931,34 @@
   },
   {
     "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "name": "percentX10SubmitterRewards",
+    "outputs": [
+      {
+        "internalType": "uint128",
+        "name": "",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
       {
-        "internalType": "address[]",
-        "name": "submitters",
-        "type": "address[]"
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
       }
     ],
-    "name": "requestNewRound",
-    "outputs": [
-      {
-        "internalType": "uint80",
-        "name": "",
-        "type": "uint80"
-      }
-    ],
+    "name": "removeAccess",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -922,14 +1014,19 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint32",
         "name": "_roundId",
-        "type": "uint256"
+        "type": "uint32"
       },
       {
         "internalType": "int256[]",
         "name": "_submissions",
         "type": "int256[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_deadline",
+        "type": "uint256"
       },
       {
         "internalType": "bytes32[]",
@@ -938,18 +1035,47 @@
       },
       {
         "internalType": "bytes32[]",
-        "name": "v",
+        "name": "s",
         "type": "bytes32[]"
       },
       {
         "internalType": "uint8[]",
-        "name": "s",
+        "name": "v",
         "type": "uint8[]"
       }
     ],
     "name": "submit",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "submitterRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "releasable",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lastUpdated",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "remainVesting",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -992,6 +1118,19 @@
       }
     ],
     "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_submitter",
+        "type": "address"
+      }
+    ],
+    "name": "unlockSubmitterRewards",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
