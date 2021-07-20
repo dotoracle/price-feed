@@ -9,7 +9,7 @@ interface IPriceFeed {
     // getRoundData and latestRoundData should both raise "No data present"
     // if they do not have data to report, instead of returning unset values
     // which could be misinterpreted as actual reported values.
-    function getRoundData(uint80 _roundId)
+    function getRoundInfo(uint80 _roundId)
         external
         view
         returns (
@@ -19,7 +19,7 @@ interface IPriceFeed {
             uint80 answeredInRound
         );
 
-    function latestRoundData()
+    function latestRoundInfo()
         external
         view
         returns (
@@ -31,13 +31,13 @@ interface IPriceFeed {
 
     function latestAnswer() external view returns (int256);
 
-    function latestTimestamp() external view returns (uint256);
+    function latestUpdated() external view returns (uint256);
 
     function latestRound() external view returns (uint256);
 
-    function getAnswer(uint256 roundId) external view returns (int256);
+    function getAnswerByRound(uint256 roundId) external view returns (int256);
 
-    function getTimestamp(uint256 roundId) external view returns (uint256);
+    function getUpdatedTime(uint256 roundId) external view returns (uint256);
 
     event AnswerUpdated(
         int256 indexed current,

@@ -70,7 +70,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getAnswer",
+    "name": "getAnswerByRound",
     "outputs": [
       {
         "internalType": "int256",
@@ -89,7 +89,7 @@
         "type": "uint80"
       }
     ],
-    "name": "getRoundData",
+    "name": "getRoundInfo",
     "outputs": [
       {
         "internalType": "uint80",
@@ -123,7 +123,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getTimestamp",
+    "name": "getUpdatedTime",
     "outputs": [
       {
         "internalType": "uint256",
@@ -162,7 +162,7 @@
   },
   {
     "inputs": [],
-    "name": "latestRoundData",
+    "name": "latestRoundInfo",
     "outputs": [
       {
         "internalType": "uint80",
@@ -190,7 +190,7 @@
   },
   {
     "inputs": [],
-    "name": "latestTimestamp",
+    "name": "latestUpdated",
     "outputs": [
       {
         "internalType": "uint256",

@@ -581,7 +581,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getAnswer",
+    "name": "getAnswerByRound",
     "outputs": [
       {
         "internalType": "int256",
@@ -613,7 +613,7 @@
         "type": "uint80"
       }
     ],
-    "name": "getRoundData",
+    "name": "getRoundInfo",
     "outputs": [
       {
         "internalType": "uint80",
@@ -647,7 +647,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getTimestamp",
+    "name": "getUpdatedTime",
     "outputs": [
       {
         "internalType": "uint256",
@@ -710,7 +710,7 @@
   },
   {
     "inputs": [],
-    "name": "latestRoundData",
+    "name": "latestRoundInfo",
     "outputs": [
       {
         "internalType": "uint80",
@@ -738,7 +738,7 @@
   },
   {
     "inputs": [],
-    "name": "latestTimestamp",
+    "name": "latestUpdated",
     "outputs": [
       {
         "internalType": "uint256",
@@ -956,36 +956,13 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_requester",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "_authorized",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_delay",
-        "type": "uint32"
-      }
-    ],
-    "name": "setRequesterPermissions",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint32",
         "name": "_roundId",
         "type": "uint32"
       },
       {
         "internalType": "int256[]",
-        "name": "_submissions",
+        "name": "_prices",
         "type": "int256[]"
       },
       {

@@ -97,14 +97,14 @@ abstract contract OracleFundManager is OracleManager, Ownable {
     {
         uint256 available = uint256(recordedFunds.available);
         require(
-            available.sub(requiredReserve(paymentAmount)) >= _amount,
+            available.sub(computeRequiredReserve(paymentAmount)) >= _amount,
             "insufficient reserve funds"
         );
         dtoToken.safeTransfer(_recipient, _amount);
         updateAvailableFunds();
     }
 
-    function requiredReserve(uint256 payment)
+    function computeRequiredReserve(uint256 payment)
         internal
         view
         virtual

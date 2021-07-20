@@ -122,29 +122,6 @@ contract PriceFeedOracle is
      */
 
     /**
-     * @notice allows the owner to specify new non-oracles to start new rounds
-     * @param _requester is the address to set permissions for
-     * @param _authorized is a boolean specifying whether they can start new rounds or not
-     * @param _delay is the number of rounds the requester must wait before starting another round
-     */
-    function setRequesterPermissions(
-        address _requester,
-        bool _authorized,
-        uint32 _delay
-    ) external onlyOwner() {
-        if (requesters[_requester].authorized == _authorized) return;
-
-        if (_authorized) {
-            requesters[_requester].authorized = _authorized;
-            requesters[_requester].delay = _delay;
-        } else {
-            delete requesters[_requester];
-        }
-
-        emit RequesterPermissionsSet(_requester, _authorized, _delay);
-    }
-
-    /**
      * @notice called by the owner to remove and add new oracles as well as
      * update the round related parameters that pertain to total oracle count
      * @param _removed is the list of addresses for the new Oracles being removed
@@ -186,7 +163,7 @@ contract PriceFeedOracle is
     }
 
     function addOracle(address _oracle, address _admin) internal {
-        require(!oracleEnabled(_oracle), "oracle already enabled");
+        require(!isOracleEnabled(_oracle), "oracle already enabled");
 
         require(_admin != address(0), "cannot set admin to 0");
         require(
@@ -206,7 +183,7 @@ contract PriceFeedOracle is
     }
 
     function removeOracle(address _oracle) internal {
-        require(oracleEnabled(_oracle), "oracle not enabled");
+        require(isOracleEnabled(_oracle), "oracle not enabled");
 
         oracles[_oracle].endingRound = lastReportedRound.add(1);
         address tail = oracleAddresses[uint256(oracleCount()).sub(1)];
@@ -238,7 +215,7 @@ contract PriceFeedOracle is
         );
         require(oracleNum >= _maxSubmissions, "max cannot exceed total");
         require(
-            recordedFunds.available >= requiredReserve(_paymentAmount),
+            recordedFunds.available >= computeRequiredReserve(_paymentAmount),
             "insufficient funds for payment"
         );
         if (oracleCount() > 0) {
@@ -283,23 +260,6 @@ contract PriceFeedOracle is
         emit OracleAdminUpdated(_oracle, msg.sender);
     }
 
-    // /**
-    //  * @notice allows non-oracles to request a new round
-    //  */
-    // function requestNewRound() external returns (uint80) {
-    //     require(requesters[msg.sender].authorized, "not authorized requester");
-
-    //     uint32 current = lastReportedRound;
-    //     require(
-    //         rounds[current].updatedAt > 0 || timedOut(current),
-    //         "prev round must be supersedable"
-    //     );
-
-    //     uint32 newRoundId = current.add(1);
-    //     requesterInitializeNewRound(newRoundId);
-    //     return newRoundId;
-    // }
-
     /*
      * ----------------------------------------ORACLE FUNCTIONS------------------------------------------------
      */
@@ -308,7 +268,7 @@ contract PriceFeedOracle is
      * @notice V1, testnet, use simple ECDSA signatures combined in a single transaction
      * @notice called by oracles when they have witnessed a need to update, V1 uses ECDSA, V2 will use threshold shnorr singnature
      * @param _roundId is the ID of the round this submission pertains to
-     * @param _submissions are the updated data that the oracles are submitting
+     * @param _prices are the updated data that the oracles are submitting
      * @param _deadline time at which the price is still valid. this time is determined by the oracles
      * @param r are the r signature data that the oracles are submitting
      * @param s are the s signature data that the oracles are submitting
@@ -316,7 +276,7 @@ contract PriceFeedOracle is
      */
     function submit(
         uint32 _roundId,
-        int256[] memory _submissions,
+        int256[] memory _prices,
         uint256 _deadline,
         bytes32[] memory r,
         bytes32[] memory s,
@@ -327,7 +287,7 @@ contract PriceFeedOracle is
             "PriceFeedOracle::submit deadline over"
         );
         require(
-            _submissions.length == r.length &&
+            _prices.length == r.length &&
                 r.length == s.length &&
                 s.length == v.length,
             "PriceFeedOracle::submit Invalid input paramters length"
@@ -339,33 +299,33 @@ contract PriceFeedOracle is
         );
 
         require(
-            _submissions.length >= minSubmissionCount,
+            _prices.length >= minSubmissionCount,
             "PriceFeedOracle::submit submissions under min submission count"
         );
 
         require(
-            validateOracleRound(uint32(_roundId)),
+            _roundId == lastReportedRound.add(1),
             "PriceFeedOracle::submit Invalid RoundId"
         );
-        initializeNewRound(_roundId);
+        createNewRound(_roundId);
         Round storage currentRoundData = rounds[_roundId];
 
         bytes32 message = keccak256(
                 abi.encode(
                     _roundId,
                     address(this),
-                    _submissions,
+                    _prices,
                     _deadline
                 )
             );
-        for (uint256 i = 0; i < _submissions.length; i++) {
+        for (uint256 i = 0; i < _prices.length; i++) {
             //TODO: value range can be checked off-chain to further optimize gas
             require(
-                _submissions[i] >= minSubmissionValue,
+                _prices[i] >= minSubmissionValue,
                 "value below minSubmissionValue"
             );
             require(
-                _submissions[i] <= maxSubmissionValue,
+                _prices[i] <= maxSubmissionValue,
                 "value above maxSubmissionValue"
             );
 
@@ -382,23 +342,23 @@ contract PriceFeedOracle is
             );
             //the off-chain network dotoracle must verify there is no duplicate oracles in the submissions
             require(
-                oracleEnabled(signer),
+                isOracleEnabled(signer),
                 "PriceFeedOracle::submit submissions data corrupted or invalid"
             );
             currentRoundData.oracles.push(signer);
             payOracle(signer);
         }
 
-        (bool updated, int256 newAnswer) = updateRoundAnswer(
+        (bool updated, int256 newAnswer) = updateRoundPrice(
             uint32(_roundId),
-            _submissions
+            _prices
         );
         if (updated) {
-            validateAnswer(uint32(_roundId), newAnswer);
+            validateRoundPrice(uint32(_roundId), newAnswer);
         }
 
         //pay submitter rewards for incentivizations
-        uint256 submitterRewardsToAppend = _submissions
+        uint256 submitterRewardsToAppend = _prices
         .length
         .mul(paymentAmount)
         .mul(percentX10SubmitterRewards)
@@ -464,8 +424,8 @@ contract PriceFeedOracle is
      * Private
      */
 
-    function initializeNewRound(uint32 _roundId) private {
-        updateTimedOutRoundInfo(_roundId.sub(1));
+    function createNewRound(uint32 _roundId) private {
+        updateRoundInfo(_roundId.sub(1));
 
         lastReportedRound = _roundId;
         rounds[_roundId].updatedAt = uint64(block.timestamp);
@@ -473,7 +433,7 @@ contract PriceFeedOracle is
         emit NewRound(_roundId, msg.sender, rounds[_roundId].updatedAt);
     }
 
-    function validateAnswer(uint32 _roundId, int256 _newAnswer) private {
+    function validateRoundPrice(uint32 _roundId, int256 _newAnswer) private {
         IDataChecker av = checker; // cache storage reads
         if (address(av) == address(0)) return;
 
@@ -492,32 +452,18 @@ contract PriceFeedOracle is
         {} catch {}
     }
 
-    // function requesterInitializeNewRound(uint32 _roundId) private {
-    //     if (!newRound(_roundId)) return;
-    //     uint256 lastStarted = requesters[msg.sender].lastStartedRound; // cache storage reads
-    //     require(
-    //         _roundId > lastStarted + requesters[msg.sender].delay ||
-    //             lastStarted == 0,
-    //         "must delay requests"
-    //     );
-
-    //     initializeNewRound(_roundId);
-
-    //     requesters[msg.sender].lastStartedRound = _roundId;
-    // }
-
-    function updateTimedOutRoundInfo(uint32 _roundId) private {
+    function updateRoundInfo(uint32 _roundId) private {
         uint32 prevId = _roundId.sub(1);
         rounds[_roundId].answer = rounds[prevId].answer;
         rounds[_roundId].answeredInRound = rounds[prevId].answeredInRound;
         rounds[_roundId].updatedAt = uint64(block.timestamp);
     }
 
-    function updateRoundAnswer(uint32 _roundId, int256[] memory _submissions)
+    function updateRoundPrice(uint32 _roundId, int256[] memory _prices)
         internal
         returns (bool, int256)
     {
-        int256 newAnswer = Median.calculateInplace(_submissions);
+        int256 newAnswer = Median.calculateInplace(_prices);
         rounds[_roundId].answer = newAnswer;
         rounds[_roundId].updatedAt = uint64(block.timestamp);
         rounds[_roundId].answeredInRound = _roundId;
@@ -543,53 +489,19 @@ contract PriceFeedOracle is
     /*
      * ----------------------------------------VIEW FUNCTIONS------------------------------------------------
      */
-
-    /**
-     * @notice get the most recently reported answer
-     *
-     * @dev #[deprecated] Use latestRoundData instead. This does not error if no
-     * answer has been reached, it will simply return 0. Either wait to point to
-     * an already answered Aggregator or use the recommended latestRoundData
-     * instead which includes better verification information.
-     */
     function latestAnswer() public view checkAccess virtual override returns (int256) {
         return rounds[lastReportedRound].answer;
     }
 
-    /**
-     * @notice get the most recent updated at timestamp
-     *
-     * @dev #[deprecated] Use latestRoundData instead. This does not error if no
-     * answer has been reached, it will simply return 0. Either wait to point to
-     * an already answered Aggregator or use the recommended latestRoundData
-     * instead which includes better verification information.
-     */
-    function latestTimestamp() public view virtual override returns (uint256) {
+    function latestUpdated() public view virtual override returns (uint256) {
         return rounds[lastReportedRound].updatedAt;
     }
 
-    /**
-     * @notice get the ID of the last updated round
-     *
-     * @dev #[deprecated] Use latestRoundData instead. This does not error if no
-     * answer has been reached, it will simply return 0. Either wait to point to
-     * an already answered Aggregator or use the recommended latestRoundData
-     * instead which includes better verification information.
-     */
     function latestRound() public view virtual override returns (uint256) {
         return lastReportedRound;
     }
 
-    /**
-     * @notice get past rounds answers
-     * @param _roundId the round number to retrieve the answer for
-     *
-     * @dev #[deprecated] Use getRoundData instead. This does not error if no
-     * answer has been reached, it will simply return 0. Either wait to point to
-     * an already answered Aggregator or use the recommended getRoundData
-     * instead which includes better verification information.
-     */
-    function getAnswer(uint256 _roundId)
+    function getAnswerByRound(uint256 _roundId)
         public
         view
         checkAccess
@@ -603,16 +515,7 @@ contract PriceFeedOracle is
         return 0;
     }
 
-    /**
-     * @notice get timestamp when an answer was last updated
-     * @param _roundId the round number to retrieve the updated timestamp for
-     *
-     * @dev #[deprecated] Use getRoundData instead. This does not error if no
-     * answer has been reached, it will simply return 0. Either wait to point to
-     * an already answered Aggregator or use the recommended getRoundData
-     * instead which includes better verification information.
-     */
-    function getTimestamp(uint256 _roundId)
+    function getUpdatedTime(uint256 _roundId)
         public
         view
         virtual
@@ -625,23 +528,7 @@ contract PriceFeedOracle is
         return 0;
     }
 
-    /**
-     * @notice get data about a round. Consumers are encouraged to check
-     * that they're receiving fresh data by inspecting the updatedAt and
-     * answeredInRound return values.
-     * @param _roundId the round ID to retrieve the round data for
-     * @return roundId is the round ID for which data was retrieved
-     * @return answer is the answer for the given round
-     * @return updatedAt is the timestamp when the round last was updated (i.e.
-     * answer was last computed)
-     * @return answeredInRound is the round ID of the round in which the answer
-     * was computed. answeredInRound may be smaller than roundId when the round
-     * timed out. answeredInRound is equal to roundId when the round didn't time out
-     * and was completed regularly.
-     * @dev Note that for in-progress rounds (i.e. rounds that haven't yet received
-     * maxSubmissions) answer and updatedAt may change between queries.
-     */
-    function getRoundData(uint80 _roundId)
+    function getRoundInfo(uint80 _roundId)
         public
         view
         checkAccess
@@ -664,26 +551,7 @@ contract PriceFeedOracle is
         return (_roundId, r.answer, r.updatedAt, r.answeredInRound);
     }
 
-    /**
-     * @notice get data about the latest round. Consumers are encouraged to check
-     * that they're receiving fresh data by inspecting the updatedAt and
-     * answeredInRound return values. Consumers are encouraged to
-     * use this more fully featured method over the "legacy" latestRound/
-     * latestAnswer/latestTimestamp functions. Consumers are encouraged to check
-     * that they're receiving fresh data by inspecting the updatedAt and
-     * answeredInRound return values.
-     * @return roundId is the round ID for which data was retrieved
-     * @return answer is the answer for the given round
-     * @return updatedAt is the timestamp when the round last was updated (i.e.
-     * answer was last computed)
-     * @return answeredInRound is the round ID of the round in which the answer
-     * was computed. answeredInRound may be smaller than roundId when the round
-     * timed out. answeredInRound is equal to roundId when the round didn't time
-     * out and was completed regularly.
-     * @dev Note that for in-progress rounds (i.e. rounds that haven't yet
-     * received maxSubmissions) answer and updatedAt may change between queries.
-     */
-    function latestRoundData()
+    function latestRoundInfo()
         public
         view
         checkAccess
@@ -696,7 +564,7 @@ contract PriceFeedOracle is
             uint80 answeredInRound
         )
     {
-        return getRoundData(lastReportedRound);
+        return getRoundInfo(lastReportedRound);
     }
 
     /**
@@ -756,52 +624,15 @@ contract PriceFeedOracle is
         return currentRound.add(1);
     }
 
-    // function previousAndCurrentUnanswered(uint32 _roundId, uint32 _rrId)
-    //     private
-    //     view
-    //     returns (bool)
-    // {
-    //     return _roundId.add(1) == _rrId && rounds[_rrId].updatedAt == 0;
-    // }
-
-    function validateOracleRound(uint32 _roundId) private view returns (bool) {
-        return _roundId == lastReportedRound.add(1);
-        // cache storage reads
-        // uint32 startingRound = oracles[_oracle].startingRound;
-        // uint32 rrId = lastReportedRound;
-
-        // if (startingRound == 0) return "not enabled oracle";
-        // if (startingRound > _roundId) return "not yet enabled oracle";
-        // if (oracles[_oracle].endingRound < _roundId)
-        //     return "no longer allowed oracle";
-        // if (oracles[_oracle].lastReportedRound >= _roundId)
-        //     return "cannot report on previous rounds";
-        // if (
-        //     _roundId != rrId &&
-        //     _roundId != rrId.add(1) &&
-        //     !previousAndCurrentUnanswered(_roundId, rrId)
-        // ) return "invalid round to report";
-        // if (_roundId != 1 && !supersedable(_roundId.sub(1)))
-        //     return "previous round not supersedable";
-    }
-
-    // function supersedable(uint32 _roundId) private view returns (bool) {
-    //     return rounds[_roundId].updatedAt > 0 || timedOut(_roundId);
-    // }
-
-    function newRound(uint32 _roundId) private view returns (bool) {
-        return _roundId == lastReportedRound.add(1);
-    }
-
     function validRoundId(uint256 _roundId) private pure returns (bool) {
         return _roundId <= ROUND_MAX;
     }
 
-    function oracleEnabled(address _oracle) internal view returns (bool) {
+    function isOracleEnabled(address _oracle) internal view returns (bool) {
         return oracles[_oracle].endingRound == ROUND_MAX;
     }
 
-    function requiredReserve(uint256 payment)
+    function computeRequiredReserve(uint256 payment)
         internal
         view
         override
