@@ -350,6 +350,14 @@ contract PriceFeedOracle is
         initializeNewRound(_roundId);
         Round storage currentRoundData = rounds[_roundId];
 
+        bytes32 message = keccak256(
+                abi.encode(
+                    _roundId,
+                    address(this),
+                    _submissions,
+                    _deadline
+                )
+            );
         for (uint256 i = 0; i < _submissions.length; i++) {
             //TODO: value range can be checked off-chain to further optimize gas
             require(
@@ -359,16 +367,6 @@ contract PriceFeedOracle is
             require(
                 _submissions[i] <= maxSubmissionValue,
                 "value above maxSubmissionValue"
-            );
-
-            bytes32 message = keccak256(
-                abi.encode(
-                    _roundId,
-                    address(this),
-                    _submissions[i],
-                    _submissions,
-                    _deadline
-                )
             );
 
             address signer = ecrecover(
