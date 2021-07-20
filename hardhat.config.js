@@ -45,6 +45,7 @@ module.exports = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
+      accounts: {mnemonic: "test test test test test test test test test test test junk"}
     },
     // hardhatfork: {
     //   blockGasLimit: 200000000,
@@ -170,6 +171,10 @@ module.exports = {
           3: '0x1337c0d31337c0D31337C0d31337c0d31337C0d3', // ropsten
           4: '0x1337c0d31337c0D31337C0d31337c0d31337C0d3', // rinkeby
           42: '0x1337c0d31337c0D31337C0d31337c0d31337C0d3', // kovan
+        },
+        dtoToken: {
+          mainchain: 97,
+          address: ''
         }
     }
 };

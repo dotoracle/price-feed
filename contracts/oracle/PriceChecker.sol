@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 import "../interfaces/IDataChecker.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract DataChecker is Ownable {
+contract PriceChecker is Ownable {
     IDataChecker public checker;
     event ValidatorUpdated(address indexed previous, address indexed current);
 

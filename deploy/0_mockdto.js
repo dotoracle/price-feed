@@ -3,12 +3,11 @@ const {
   chainIdByName,
   saveDeploymentData,
   getContractAbi,
-  getTxGasCost,
   log
 } = require("../js-helpers/deploy");
 
 const _ = require('lodash');
-
+const { BigNumber } = require("@ethersproject/bignumber");
 module.exports = async (hre) => {
     const { ethers, upgrades, getNamedAccounts } = hre;
     const { deployer, protocolOwner, trustedForwarder } = await getNamedAccounts();
@@ -16,10 +15,9 @@ module.exports = async (hre) => {
     const deployData = {};
 
     const chainId = chainIdByName(network.name);
-    const alchemyTimeout = chainId === 31337 ? 0 : (chainId === 1 ? 5 : 3);
 
     log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
-    log('DTO Multichain Bridge Protocol - Mock Token Contract Deployment');
+    log('DTO Multichain Decentralized Oracle Protocol - Mock DTO Token Contract Deployment');
     log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
 
     log('  Using Network: ', chainNameById(chainId));
@@ -32,13 +30,13 @@ module.exports = async (hre) => {
 
     log('  Deploying Mock ERC20...');
     const ERC20Mock = await ethers.getContractFactory('ERC20Mock');
-    const ERC20MockInstance = await ERC20Mock.deploy("MEME" + chainNameById(chainId), "MEME" + chainId, deployer, '1000000000000000000000000000')
-    const genericBridge = await ERC20MockInstance.deployed()
-    log('  - ERC20Mock:         ', ERC20Mock.address);
-    deployData['ERC20Mock'] = {
+    const ERC20MockInstance = await ERC20Mock.deploy("DTO", "DTO" + chainId, deployer, BigNumber.from(10).pow(18).mul('100000000'))
+    const dtoMock = await ERC20MockInstance.deployed()
+    log('  - DTO Mock Token:         ', dtoMock.address);
+    deployData['DTOToken'] = {
       abi: getContractAbi('ERC20Mock'),
-      address: genericBridge.address,
-      deployTransaction: genericBridge.deployTransaction,
+      address: dtoMock.address,
+      deployTransaction: dtoMock.deployTransaction,
     }
 
     saveDeploymentData(chainId, deployData);

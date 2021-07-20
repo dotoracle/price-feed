@@ -10,7 +10,7 @@ import "./OracleFundManager.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./DataChecker.sol";
+import "./PriceChecker.sol";
 import "./PFConfig.sol";
 import "../lib/access/EOACheck.sol";
 import "../lib/access/SRAC.sol";
@@ -25,7 +25,7 @@ import "../lib/access/SRAC.sol";
  */
 contract PriceFeedOracle is
     IPriceFeed,
-    DataChecker,
+    PriceChecker,
     OracleFundManager,
     PFConfig,
     SRAC
@@ -46,16 +46,10 @@ contract PriceFeedOracle is
         uint128 paymentAmount;
     }
 
-    struct Requester {
-        bool authorized;
-        uint32 delay;
-        //uint32 lastStartedRound;
-    }
-
     struct SubmitterRewardsVesting {
-        uint256 releasable;
-        uint256 lastUpdated;
-        uint256 remainVesting;
+        uint64 lastUpdated;
+        uint128 releasable;
+        uint128 remainVesting;
     }
 
     // Round related params
@@ -71,24 +65,14 @@ contract PriceFeedOracle is
 
     uint32 internal lastReportedRound;
     mapping(uint32 => Round) internal rounds;
-    mapping(address => Requester) internal requesters;
 
-    event RoundDetailsUpdated(
+    event RoundSettingsUpdated(
         uint128 indexed paymentAmount,
         uint32 indexed minSubmissionCount,
         uint32 indexed maxSubmissionCount
     );
 
-    event SubmissionReceived(
-        int256 indexed submission,
-        uint32 indexed round,
-        address indexed oracle
-    );
-    event RequesterPermissionsSet(
-        address indexed requester,
-        bool authorized,
-        uint32 delay
-    );
+    event SubmissionReceived(int256 price, uint32 indexed round);
 
     /**
      * @notice set up the aggregator with initial configuration
@@ -138,28 +122,25 @@ contract PriceFeedOracle is
         uint32 _minSubmissions,
         uint32 _maxSubmissions
     ) external onlyOwner() {
+        updateAvailableFunds();
         for (uint256 i = 0; i < _removed.length; i++) {
             removeOracle(_removed[i]);
         }
 
         require(
             _added.length == _addedAdmins.length,
-            "need same oracle and admin count"
+            "PriceFeedOracle::changeOracles need same oracle and admin count"
         );
         require(
             uint256(oracleCount()).add(_added.length) <= MAX_ORACLE_COUNT,
-            "max oracles allowed"
+            "PriceFeedOracle::changeOracles max oracles allowed"
         );
 
         for (uint256 i = 0; i < _added.length; i++) {
             addOracle(_added[i], _addedAdmins[i]);
         }
 
-        updateFutureRounds(
-            paymentAmount,
-            _minSubmissions,
-            _maxSubmissions
-        );
+        updateFutureRounds(paymentAmount, _minSubmissions, _maxSubmissions);
     }
 
     function addOracle(address _oracle, address _admin) internal {
@@ -216,7 +197,7 @@ contract PriceFeedOracle is
         require(oracleNum >= _maxSubmissions, "max cannot exceed total");
         require(
             recordedFunds.available >= computeRequiredReserve(_paymentAmount),
-            "insufficient funds for payment"
+            "PriceFeedOracle::updateFutureRounds insufficient funds for payment"
         );
         if (oracleCount() > 0) {
             require(_minSubmissions > 0, "min must be greater than 0");
@@ -226,7 +207,7 @@ contract PriceFeedOracle is
         minSubmissionCount = _minSubmissions;
         maxSubmissionCount = _maxSubmissions;
 
-        emit RoundDetailsUpdated(
+        emit RoundSettingsUpdated(
             paymentAmount,
             _minSubmissions,
             _maxSubmissions
@@ -282,8 +263,9 @@ contract PriceFeedOracle is
         bytes32[] memory s,
         uint8[] memory v
     ) external {
+        updateAvailableFunds();
         require(
-            _deadline <= block.timestamp,
+            _deadline >= block.timestamp,
             "PriceFeedOracle::submit deadline over"
         );
         require(
@@ -311,13 +293,13 @@ contract PriceFeedOracle is
         Round storage currentRoundData = rounds[_roundId];
 
         bytes32 message = keccak256(
-                abi.encode(
-                    _roundId,
-                    address(this),
-                    _prices,
-                    _deadline
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                keccak256(
+                    abi.encode(_roundId, address(this), _prices, _deadline, description)
                 )
-            );
+            )
+        );
         for (uint256 i = 0; i < _prices.length; i++) {
             //TODO: value range can be checked off-chain to further optimize gas
             require(
@@ -330,12 +312,7 @@ contract PriceFeedOracle is
             );
 
             address signer = ecrecover(
-                keccak256(
-                    abi.encodePacked(
-                        "\x19Ethereum Signed Message:\n32",
-                        message
-                    )
-                ),
+                message,
                 v[i],
                 r[i],
                 s[i]
@@ -355,19 +332,22 @@ contract PriceFeedOracle is
         );
         if (updated) {
             validateRoundPrice(uint32(_roundId), newAnswer);
+            emit SubmissionReceived(newAnswer, uint32(_roundId));
         }
 
         //pay submitter rewards for incentivizations
-        uint256 submitterRewardsToAppend = _prices
-        .length
-        .mul(paymentAmount)
-        .mul(percentX10SubmitterRewards)
-        .div(1000);
+        uint128 submitterRewardsToAppend = uint128(
+            _prices
+            .length
+            .mul(paymentAmount)
+            .mul(percentX10SubmitterRewards)
+            .div(1000)
+        );
 
         appendSubmitterRewards(msg.sender, submitterRewardsToAppend);
     }
 
-    function appendSubmitterRewards(address _submitter, uint256 _rewardsToAdd)
+    function appendSubmitterRewards(address _submitter, uint128 _rewardsToAdd)
         internal
     {
         _updateSubmitterWithdrawnableRewards(_submitter);
@@ -383,9 +363,11 @@ contract PriceFeedOracle is
             _submitter
         ];
         if (vestingInfo.remainVesting > 0) {
-            uint256 unlockable = (block.timestamp.sub(vestingInfo.lastUpdated))
-            .mul(vestingInfo.remainVesting)
-            .div(SUBMITTER_REWARD_VESTING_PERIOD);
+            uint128 unlockable = uint128(
+                (block.timestamp.sub(vestingInfo.lastUpdated))
+                .mul(vestingInfo.remainVesting)
+                .div(SUBMITTER_REWARD_VESTING_PERIOD)
+            );
             if (unlockable > vestingInfo.remainVesting) {
                 unlockable = vestingInfo.remainVesting;
             }
@@ -394,29 +376,25 @@ contract PriceFeedOracle is
             );
             vestingInfo.releasable = vestingInfo.releasable.add(unlockable);
         }
-        vestingInfo.lastUpdated = block.timestamp;
+        vestingInfo.lastUpdated = uint64(block.timestamp);
     }
 
     function unlockSubmitterRewards(address _submitter) external {
         _updateSubmitterWithdrawnableRewards(_submitter);
         if (submitterRewards[_submitter].releasable > 0) {
-            dtoToken.safeTransfer(_submitter, submitterRewards[_submitter].releasable);
+            dtoToken.safeTransfer(
+                _submitter,
+                submitterRewards[_submitter].releasable
+            );
+            recordedFunds.allocated = recordedFunds.allocated.sub(
+                submitterRewards[_submitter].releasable
+            );
             submitterRewards[_submitter].releasable = 0;
         }
     }
 
-    /**
-     * @notice called through DTO's transferAndCall to update available funds
-     * in the same transaction as the funds were transferred to the aggregator
-     * @param _data is mostly ignored. It is checked for length, to be sure
-     * nothing strange is passed in.
-     */
-    function onTokenTransfer(
-        address,
-        uint256,
-        bytes calldata _data
-    ) external {
-        require(_data.length == 0, "transfer doesn't accept calldata");
+    function addFunds(uint256 _amount) external {
+        dtoToken.safeTransferFrom(msg.sender, address(this), _amount);
         updateAvailableFunds();
     }
 
@@ -425,7 +403,7 @@ contract PriceFeedOracle is
      */
 
     function createNewRound(uint32 _roundId) private {
-        updateRoundInfo(_roundId.sub(1));
+        updateRoundInfo(_roundId);
 
         lastReportedRound = _roundId;
         rounds[_roundId].updatedAt = uint64(block.timestamp);
@@ -489,7 +467,14 @@ contract PriceFeedOracle is
     /*
      * ----------------------------------------VIEW FUNCTIONS------------------------------------------------
      */
-    function latestAnswer() public view checkAccess virtual override returns (int256) {
+    function latestAnswer()
+        public
+        view
+        virtual
+        override
+        checkAccess
+        returns (int256)
+    {
         return rounds[lastReportedRound].answer;
     }
 
@@ -504,9 +489,9 @@ contract PriceFeedOracle is
     function getAnswerByRound(uint256 _roundId)
         public
         view
-        checkAccess
         virtual
         override
+        checkAccess
         returns (int256)
     {
         if (validRoundId(_roundId)) {
@@ -531,9 +516,9 @@ contract PriceFeedOracle is
     function getRoundInfo(uint80 _roundId)
         public
         view
-        checkAccess
         virtual
         override
+        checkAccess
         returns (
             uint80 roundId,
             int256 answer,
@@ -554,9 +539,9 @@ contract PriceFeedOracle is
     function latestRoundInfo()
         public
         view
-        checkAccess
         virtual
         override
+        checkAccess
         returns (
             uint80 roundId,
             int256 answer,

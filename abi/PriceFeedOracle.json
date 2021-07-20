@@ -223,31 +223,6 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "address",
-        "name": "requester",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "authorized",
-        "type": "bool"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint32",
-        "name": "delay",
-        "type": "uint32"
-      }
-    ],
-    "name": "RequesterPermissionsSet",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
         "internalType": "uint128",
         "name": "paymentAmount",
         "type": "uint128"
@@ -265,16 +240,16 @@
         "type": "uint32"
       }
     ],
-    "name": "RoundDetailsUpdated",
+    "name": "RoundSettingsUpdated",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "int256",
-        "name": "submission",
+        "name": "price",
         "type": "int256"
       },
       {
@@ -282,12 +257,6 @@
         "internalType": "uint32",
         "name": "round",
         "type": "uint32"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "oracle",
-        "type": "address"
       }
     ],
     "name": "SubmissionReceived",
@@ -425,6 +394,19 @@
       }
     ],
     "name": "addAccess",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "addFunds",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -802,29 +784,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_data",
-        "type": "bytes"
-      }
-    ],
-    "name": "onTokenTransfer",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "oracleCount",
     "outputs": [
@@ -1002,19 +961,19 @@
     "name": "submitterRewards",
     "outputs": [
       {
-        "internalType": "uint256",
-        "name": "releasable",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "lastUpdated",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint128",
+        "name": "releasable",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint128",
         "name": "remainVesting",
-        "type": "uint256"
+        "type": "uint128"
       }
     ],
     "stateMutability": "view",

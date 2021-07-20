@@ -70,7 +70,7 @@ contract DeviationChecker is Ownable, IDataChecker {
     returns (bool)
   {
     if (!isValid(_previousRoundId, _previousAnswer, _roundId, _answer)) {
-      flags.raiseFlag(msg.sender);
+      //flags.raiseFlag(msg.sender);
       return false;
     }
 
