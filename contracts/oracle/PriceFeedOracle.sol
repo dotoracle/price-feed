@@ -61,8 +61,6 @@ contract PriceFeedOracle is
     // Round related params
     uint32 public maxSubmissionCount;
     uint32 public minSubmissionCount;
-    uint32 public restartDelay;
-    uint32 public timeout;
     string public override description;
 
     uint256 public constant override version = 1;
@@ -78,9 +76,7 @@ contract PriceFeedOracle is
     event RoundDetailsUpdated(
         uint128 indexed paymentAmount,
         uint32 indexed minSubmissionCount,
-        uint32 indexed maxSubmissionCount,
-        uint32 restartDelay,
-        uint32 timeout // measured in seconds
+        uint32 indexed maxSubmissionCount
     );
 
     event SubmissionReceived(
@@ -98,8 +94,6 @@ contract PriceFeedOracle is
      * @notice set up the aggregator with initial configuration
      * @param _dto The address of the DTO token
      * @param _paymentAmount The amount paid of DTO paid to each oracle per submission, in wei (units of 10⁻¹⁸ DTO)
-     * @param _timeout is the number of seconds after the previous round that are
-     * allowed to lapse before allowing an oracle to skip an unfinished round
      * @param _validator is an optional contract address for validating
      * external validation of answers
      * @param _minSubmissionValue is an immutable check for a lower bound of what
@@ -111,17 +105,16 @@ contract PriceFeedOracle is
     constructor(
         address _dto,
         uint128 _paymentAmount,
-        uint32 _timeout,
         address _validator,
         int256 _minSubmissionValue,
         int256 _maxSubmissionValue,
         string memory _description
     ) public PFConfig(_minSubmissionValue, _maxSubmissionValue) {
         dtoToken = IERC20(_dto);
-        updateFutureRounds(_paymentAmount, 0, 0, 0, _timeout);
+        updateFutureRounds(_paymentAmount, 0, 0);
         setChecker(_validator);
         description = _description;
-        rounds[0].updatedAt = uint64(block.timestamp.sub(uint256(_timeout)));
+        rounds[0].updatedAt = uint64(block.timestamp);
     }
 
     /*
@@ -160,16 +153,13 @@ contract PriceFeedOracle is
      * list. Only this address is allowed to access the respective oracle's funds
      * @param _minSubmissions is the new minimum submission count for each round
      * @param _maxSubmissions is the new maximum submission count for each round
-     * @param _restartDelay is the number of rounds an Oracle has to wait before
-     * they can initiate a round
      */
     function changeOracles(
         address[] calldata _removed,
         address[] calldata _added,
         address[] calldata _addedAdmins,
         uint32 _minSubmissions,
-        uint32 _maxSubmissions,
-        uint32 _restartDelay
+        uint32 _maxSubmissions
     ) external onlyOwner() {
         for (uint256 i = 0; i < _removed.length; i++) {
             removeOracle(_removed[i]);
@@ -191,9 +181,7 @@ contract PriceFeedOracle is
         updateFutureRounds(
             paymentAmount,
             _minSubmissions,
-            _maxSubmissions,
-            _restartDelay,
-            timeout
+            _maxSubmissions
         );
     }
 
@@ -237,15 +225,11 @@ contract PriceFeedOracle is
      * @param _paymentAmount is the payment amount for subsequent rounds
      * @param _minSubmissions is the new minimum submission count for each round
      * @param _maxSubmissions is the new maximum submission count for each round
-     * @param _restartDelay is the number of rounds an Oracle has to wait before
-     * they can initiate a round
      */
     function updateFutureRounds(
         uint128 _paymentAmount,
         uint32 _minSubmissions,
-        uint32 _maxSubmissions,
-        uint32 _restartDelay,
-        uint32 _timeout
+        uint32 _maxSubmissions
     ) public onlyOwner() {
         uint32 oracleNum = oracleCount(); // Save on storage reads
         require(
@@ -253,10 +237,6 @@ contract PriceFeedOracle is
             "max must equal/exceed min"
         );
         require(oracleNum >= _maxSubmissions, "max cannot exceed total");
-        require(
-            oracleNum == 0 || oracleNum > _restartDelay,
-            "delay cannot exceed total"
-        );
         require(
             recordedFunds.available >= requiredReserve(_paymentAmount),
             "insufficient funds for payment"
@@ -268,15 +248,11 @@ contract PriceFeedOracle is
         paymentAmount = _paymentAmount;
         minSubmissionCount = _minSubmissions;
         maxSubmissionCount = _maxSubmissions;
-        restartDelay = _restartDelay;
-        timeout = _timeout;
 
         emit RoundDetailsUpdated(
             paymentAmount,
             _minSubmissions,
-            _maxSubmissions,
-            _restartDelay,
-            _timeout
+            _maxSubmissions
         );
     }
 
@@ -412,7 +388,7 @@ contract PriceFeedOracle is
                 "PriceFeedOracle::submit submissions data corrupted or invalid"
             );
             currentRoundData.oracles.push(signer);
-            payOracle(signer, uint32(_roundId));
+            payOracle(signer);
         }
 
         (bool updated, int256 newAnswer) = updateRoundAnswer(
@@ -424,11 +400,13 @@ contract PriceFeedOracle is
         }
 
         //pay submitter rewards for incentivizations
-        uint256 submitterRewards = _submissions
+        uint256 submitterRewardsToAppend = _submissions
         .length
         .mul(paymentAmount)
         .mul(percentX10SubmitterRewards)
         .div(1000);
+
+        appendSubmitterRewards(msg.sender, submitterRewardsToAppend);
     }
 
     function appendSubmitterRewards(address _submitter, uint256 _rewardsToAdd)
@@ -551,7 +529,7 @@ contract PriceFeedOracle is
         return (true, newAnswer);
     }
 
-    function payOracle(address _oracle, uint32 _roundId) private {
+    function payOracle(address _oracle) private {
         uint128 payment = paymentAmount;
         Funds memory funds = recordedFunds;
         funds.available = funds.available.sub(payment);

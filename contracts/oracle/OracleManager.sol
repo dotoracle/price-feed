@@ -5,9 +5,6 @@ contract OracleManager {
         uint128 withdrawable;
         uint32 startingRound;
         uint32 endingRound;
-        uint32 lastReportedRound;
-        uint32 lastStartedRound;
-        int256 latestSubmission;
         uint16 index;
         address admin;
         address pendingAdmin;

@@ -1,7 +1,7 @@
 pragma solidity ^0.7.0;
 
 
-contract PFConfig {
+abstract contract PFConfig {
   int256 immutable public minSubmissionValue;
   int256 immutable public maxSubmissionValue;
   /**
@@ -19,7 +19,7 @@ contract PFConfig {
   // confusion around accidentally reading unset values as reported values.
   string constant public V3_NO_DATA_ERROR = "No data present";
 
-  constructor(int256 _minSubmissionValue, int256 _maxSubmissionValue) public {
+  constructor(int256 _minSubmissionValue, int256 _maxSubmissionValue) internal {
       minSubmissionValue = _minSubmissionValue;
       maxSubmissionValue = _maxSubmissionValue;
   }

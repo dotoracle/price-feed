@@ -12,11 +12,6 @@
         "type": "uint128"
       },
       {
-        "internalType": "uint32",
-        "name": "_timeout",
-        "type": "uint32"
-      },
-      {
         "internalType": "address",
         "name": "_validator",
         "type": "address"
@@ -268,18 +263,6 @@
         "internalType": "uint32",
         "name": "maxSubmissionCount",
         "type": "uint32"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint32",
-        "name": "restartDelay",
-        "type": "uint32"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint32",
-        "name": "timeout",
-        "type": "uint32"
       }
     ],
     "name": "RoundDetailsUpdated",
@@ -497,11 +480,6 @@
       {
         "internalType": "uint32",
         "name": "_maxSubmissions",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_restartDelay",
         "type": "uint32"
       }
     ],
@@ -963,19 +941,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "restartDelay",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -1079,19 +1044,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "timeout",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -1157,16 +1109,6 @@
       {
         "internalType": "uint32",
         "name": "_maxSubmissions",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_restartDelay",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_timeout",
         "type": "uint32"
       }
     ],

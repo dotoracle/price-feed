@@ -1,21 +1,5 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "int256",
-        "name": "_minSubmissionValue",
-        "type": "int256"
-      },
-      {
-        "internalType": "int256",
-        "name": "_maxSubmissionValue",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
     "inputs": [],
     "name": "MAX_ORACLE_COUNT",
     "outputs": [
