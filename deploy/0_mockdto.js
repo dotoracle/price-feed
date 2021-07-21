@@ -30,7 +30,7 @@ module.exports = async (hre) => {
 
     log('  Deploying Mock ERC20...');
     const ERC20Mock = await ethers.getContractFactory('ERC20Mock');
-    const ERC20MockInstance = await ERC20Mock.deploy("DTO", "DTO" + chainId, deployer, BigNumber.from(10).pow(18).mul('100000000'))
+    const ERC20MockInstance = await ERC20Mock.deploy("DTO Faucet", "DTO", deployer, BigNumber.from(10).pow(18).mul('100000000'))
     const dtoMock = await ERC20MockInstance.deployed()
     log('  - DTO Mock Token:         ', dtoMock.address);
     deployData['DTOToken'] = {
