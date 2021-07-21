@@ -117,9 +117,8 @@ describe("Bridge {}", async () => {
     for (var i = 0; i < signerAddresses.length; i++) {
       let withdrawablePayment = await PriceFeed.withdrawablePayment(signerAddresses[i])
       expect(withdrawablePayment).to.eq(parseEther('1').mul(1000 - percentX10SubmitterRewards).div(1000))
-      const PriceFeedTemp = await PriceFeedOracle.attach(priceFeedAddress)
-      await PriceFeedTemp.connect(signers[i])
-      await PriceFeedTemp.withdrawPayment(signerAddresses[i], signerAddresses[i], withdrawablePayment)
+      await PriceFeed.connect(signers[i])
+      await PriceFeed.withdrawPayment(signerAddresses[i], signerAddresses[i], withdrawablePayment)
       let bal = await DTOToken.balanceOf(signerAddresses[i])
       expect(bal).to.eq(balsBefore[i].add(withdrawablePayment))
     }
@@ -146,9 +145,8 @@ describe("Bridge {}", async () => {
     for (var i = 0; i < signerAddresses.length; i++) {
       let withdrawablePayment = await PriceFeed.withdrawablePayment(signerAddresses[i])
       expect(withdrawablePayment).to.eq(parseEther('1').mul(1000 - percentX10SubmitterRewards).div(1000))
-      const PriceFeedTemp = await PriceFeedOracle.attach(priceFeedAddress)
-      await PriceFeedTemp.connect(signers[i])
-      await PriceFeedTemp.withdrawPayment(signerAddresses[i], signerAddresses[i], withdrawablePayment)
+      await PriceFeed.connect(signers[i])
+      await PriceFeed.withdrawPayment(signerAddresses[i], signerAddresses[i], withdrawablePayment)
       let bal = await DTOToken.balanceOf(signerAddresses[i])
       expect(bal).to.eq(balsBefore[i].add(withdrawablePayment))
     }
