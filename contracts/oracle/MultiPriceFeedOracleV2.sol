@@ -25,7 +25,7 @@ import "../lib/access/SRAC.sol";
  * single answer. The latest aggregated answer is exposed as well as historical
  * answers and their updated at timestamp.
  */
-contract MultiPriceFeedOracle is
+contract MultiPriceFeedOracleV2 is
     IMultiPriceFeed,
     OraclePaymentManager,
     SRAC,
@@ -50,6 +50,8 @@ contract MultiPriceFeedOracle is
         uint128 remainVesting;
     }
 
+    address public oracleDataValidator; //generated through MPC key gen
+
     string[] public tokenList;
     string public override description;
 
@@ -61,6 +63,7 @@ contract MultiPriceFeedOracle is
 
     mapping(uint32 => Round) internal rounds;
 
+    event OraclePaymentV2(uint32 roundId, uint128 payment);
     /**
      * @notice set up the aggregator with initial configuration
      * @param _dto The address of the DTO token
@@ -103,31 +106,18 @@ contract MultiPriceFeedOracle is
         uint32 _roundId,
         int256[] memory _prices, //median prices of all tokens, median prices are calculated by the decentralized oracle network off-chain
         uint256 _deadline,
-        bytes32[] memory r,
-        bytes32[] memory s,
-        uint8[] memory v
+        bytes32 r,
+        bytes32 s,
+        uint8 v
     ) external {
         require(
             _deadline >= block.timestamp,
             "PriceFeedOracle::submit deadline over"
         );
-        require(
-            r.length == s.length && s.length == v.length,
-            "PriceFeedOracle::submit Invalid input paramters length"
-        );
+
         require(
             _prices.length == tokenList.length,
             "PriceFeedOracle::submit Invalid submitted token count"
-        );
-        require(
-            v.length.mul(100).div(oracleAddresses.length) >=
-                MIN_THRESHOLD_PERCENT,
-            "PriceFeedOracle::submit Number of submissions under threshold"
-        );
-
-        require(
-            r.length >= minSubmissionCount,
-            "PriceFeedOracle::submit submissions under min submission count"
         );
 
         require(
@@ -154,15 +144,10 @@ contract MultiPriceFeedOracle is
                 )
             )
         );
-        for (uint256 i = 0; i < r.length; i++) {
-            address signer = ecrecover(message, v[i], r[i], s[i]);
-            //the off-chain network dotoracle must verify there is no duplicate oracles in the submissions
-            require(
-                isOracleEnabled(signer),
-                "PriceFeedOracle::submit submissions data corrupted or invalid"
-            );
-            payOracle(_roundId, signer);
-        }
+        address signer = ecrecover(message, v, r, s);
+        require(signer == oracleDataValidator, "PriceFeedOracle::submit invalid oracle validator signature");
+
+        payOracles(_roundId);
         emit AvailableFundsUpdated(recordedFunds.available);
 
         currentRoundData.answers = _prices;
@@ -178,9 +163,10 @@ contract MultiPriceFeedOracle is
 
         //pay submitter rewards for incentivizations
         uint128 submitterRewardsToAppend = uint128(
-            r.length.mul(paymentAmount).mul(percentX10SubmitterRewards).div(
-                1000
-            )
+            uint128(oracleCount())
+            .mul(paymentAmount)
+            .mul(percentX10SubmitterRewards)
+            .div(1000)
         );
 
         appendSubmitterRewards(msg.sender, submitterRewardsToAppend);
@@ -260,16 +246,23 @@ contract MultiPriceFeedOracle is
         }
     }
 
-    function payOracle(uint32 _roundId, address _oracle) private {
+    function payOracles(uint32 _roundId) private {
         uint128 payment = paymentAmount;
         Funds memory funds = recordedFunds;
-        funds.available = funds.available.sub(payment);
-        funds.allocated = funds.allocated.add(payment);
+        funds.available = funds.available.sub(payment.mul(oracleCount()));
+        funds.allocated = funds.allocated.add(payment.mul(oracleCount()));
         recordedFunds = funds;
-        oracles[_oracle].withdrawable = oracles[_oracle].withdrawable.add(
-            payment.mul(uint128(1000) - percentX10SubmitterRewards).div(1000)
-        );
-        emit OraclePayment(_roundId, _oracle, payment);
+        for(uint i = 0; i < oracleCount(); i++) {
+            address _oracle = oracleAddresses[i];
+            oracles[_oracle].withdrawable = oracles[_oracle].withdrawable.add(
+                payment.mul(uint128(1000) - percentX10SubmitterRewards).div(1000)
+            );
+        }
+        emit OraclePaymentV2(_roundId, payment);
+    }
+
+    function changeOracleValidator(address _newValidator) external onlyOwner {
+        oracleDataValidator = _newValidator;
     }
 
     /*
