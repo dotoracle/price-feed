@@ -10,16 +10,6 @@
         "internalType": "uint128",
         "name": "_paymentAmount",
         "type": "uint128"
-      },
-      {
-        "internalType": "int256",
-        "name": "_minSubmissionValue",
-        "type": "int256"
-      },
-      {
-        "internalType": "int256",
-        "name": "_maxSubmissionValue",
-        "type": "int256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -380,38 +370,12 @@
   },
   {
     "inputs": [],
-    "name": "maxSubmissionValue",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "minSubmissionCount",
     "outputs": [
       {
         "internalType": "uint32",
         "name": "",
         "type": "uint32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "minSubmissionValue",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "",
-        "type": "int256"
       }
     ],
     "stateMutability": "view",

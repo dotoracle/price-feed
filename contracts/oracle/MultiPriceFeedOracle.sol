@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
+pragma experimental ABIEncoderV2;
 
 import "../lib/math/Median.sol";
 import "../lib/math/SafeMath128.sol";
 import "../lib/math/SafeMath32.sol";
 import "../lib/math/SafeMath64.sol";
-import "../interfaces/IPriceFeed.sol";
+import "../interfaces/IMultiPriceFeed.sol";
 import "./OracleFundManager.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "./OraclePaymentManager.sol";
 import "./PFConfig.sol";
 import "../lib/access/EOACheck.sol";
@@ -23,10 +25,11 @@ import "../lib/access/SRAC.sol";
  * single answer. The latest aggregated answer is exposed as well as historical
  * answers and their updated at timestamp.
  */
-contract PriceFeedOracle is
-    IPriceFeed,
+contract MultiPriceFeedOracle is
+    IMultiPriceFeed,
     OraclePaymentManager,
-    SRAC
+    SRAC,
+    Initializable
 {
     using SafeMath for uint256;
     using SafeMath128 for uint128;
@@ -36,10 +39,8 @@ contract PriceFeedOracle is
     using EOACheck for address;
 
     struct Round {
-        int256 answer;
+        int256[] answers;
         uint64 updatedAt; //timestamp
-        uint32 answeredInRound;
-        int256[] submissions;
         uint128 paymentAmount;
     }
 
@@ -48,7 +49,8 @@ contract PriceFeedOracle is
         uint128 releasable;
         uint128 remainVesting;
     }
-    
+
+    string[] public tokenList;
     string public override description;
 
     uint256 public constant override version = 1;
@@ -59,25 +61,28 @@ contract PriceFeedOracle is
 
     mapping(uint32 => Round) internal rounds;
 
-    event SubmissionReceived(int256 price, uint32 indexed round);
-
     /**
      * @notice set up the aggregator with initial configuration
      * @param _dto The address of the DTO token
      * @param _paymentAmount The amount paid of DTO paid to each oracle per submission, in wei (units of 10⁻¹⁸ DTO)
      * @param _validator is an optional contract address for validating
      * external validation of answers
-     * @param _description a short description of what is being reported
      */
     constructor(
         address _dto,
         uint128 _paymentAmount,
-        address _validator,
-        string memory _description
+        address _validator
     ) public OraclePaymentManager(_dto, _paymentAmount) {
         setChecker(_validator);
-        description = _description;
         rounds[0].updatedAt = uint64(block.timestamp);
+    }
+
+    function initializeTokenList(
+        string memory _description,
+        string[] memory _tokenList
+    ) external initializer {
+        description = _description;
+        tokenList = _tokenList;
     }
 
     /*
@@ -96,22 +101,23 @@ contract PriceFeedOracle is
      */
     function submit(
         uint32 _roundId,
-        int256[] memory _prices,
+        int256[] memory _prices, //median prices of all tokens, median prices are calculated by the decentralized oracle network off-chain
         uint256 _deadline,
         bytes32[] memory r,
         bytes32[] memory s,
         uint8[] memory v
     ) external {
-        updateAvailableFunds();
         require(
             _deadline >= block.timestamp,
             "PriceFeedOracle::submit deadline over"
         );
         require(
-            _prices.length == r.length &&
-                r.length == s.length &&
-                s.length == v.length,
+            r.length == s.length && s.length == v.length,
             "PriceFeedOracle::submit Invalid input paramters length"
+        );
+        require(
+            _prices.length == tokenList.length,
+            "PriceFeedOracle::submit Invalid submitted token count"
         );
         require(
             v.length.mul(100).div(oracleAddresses.length) >=
@@ -120,7 +126,7 @@ contract PriceFeedOracle is
         );
 
         require(
-            _prices.length >= minSubmissionCount,
+            r.length >= minSubmissionCount,
             "PriceFeedOracle::submit submissions under min submission count"
         );
 
@@ -128,23 +134,29 @@ contract PriceFeedOracle is
             _roundId == lastReportedRound.add(1),
             "PriceFeedOracle::submit Invalid RoundId"
         );
-        createNewRound(_roundId);
+        lastReportedRound = _roundId;
+        Round storage currentRoundData = rounds[_roundId];
+
+        currentRoundData.updatedAt = uint64(block.timestamp);
+
 
         bytes32 message = keccak256(
             abi.encodePacked(
                 "\x19Ethereum Signed Message:\n32",
                 keccak256(
-                    abi.encode(_roundId, address(this), _prices, _deadline, description)
+                    abi.encode(
+                        _roundId,
+                        address(this),
+                        _prices,
+                        _deadline,
+                        tokenList,
+                        description
+                    )
                 )
             )
         );
-        for (uint256 i = 0; i < _prices.length; i++) {
-            address signer = ecrecover(
-                message,
-                v[i],
-                r[i],
-                s[i]
-            );
+        for (uint256 i = 0; i < r.length; i++) {
+            address signer = ecrecover(message, v[i], r[i], s[i]);
             //the off-chain network dotoracle must verify there is no duplicate oracles in the submissions
             require(
                 isOracleEnabled(signer),
@@ -154,14 +166,16 @@ contract PriceFeedOracle is
         }
         emit AvailableFundsUpdated(recordedFunds.available);
 
-        (bool updated, int256 newAnswer) = updateRoundPrice(
-            uint32(_roundId),
-            _prices
+        currentRoundData.answers = _prices;
+        currentRoundData.paymentAmount = paymentAmount;
+
+        emit AnswerUpdated(
+            _roundId,
+            abi.encodePacked(_prices),
+            block.timestamp
         );
-        if (updated) {
-            validateRoundPrice(uint32(_roundId), newAnswer);
-            emit SubmissionReceived(newAnswer, uint32(_roundId));
-        }
+
+        validateRoundPrice(uint32(_roundId), _prices);
 
         //pay submitter rewards for incentivizations
         uint128 submitterRewardsToAppend = uint128(
@@ -226,57 +240,27 @@ contract PriceFeedOracle is
         updateAvailableFunds();
     }
 
-    /**
-     * Private
-     */
-
-    function createNewRound(uint32 _roundId) private {
-        updateRoundInfo(_roundId);
-
-        lastReportedRound = _roundId;
-        rounds[_roundId].updatedAt = uint64(block.timestamp);
-
-        emit NewRound(_roundId, msg.sender, rounds[_roundId].updatedAt);
-    }
-
-    function validateRoundPrice(uint32 _roundId, int256 _newAnswer) private {
+    function validateRoundPrice(uint32 _roundId, int256[] memory _newAnswers)
+        private
+    {
         IDataChecker av = checker; // cache storage reads
         if (address(av) == address(0)) return;
-
+        if (_roundId == 1) return; //dont need to validate first round
         uint32 prevRound = _roundId.sub(1);
-        uint32 prevAnswerRoundId = rounds[prevRound].answeredInRound;
-        int256 prevRoundAnswer = rounds[prevRound].answer;
-        // We do not want the validator to ever prevent reporting, so we limit its
-        // gas usage and catch any errors that may arise.
-        try
-            av.validate{gas: VALIDATOR_GAS_LIMIT}(
-                prevAnswerRoundId,
-                prevRoundAnswer,
-                _roundId,
-                _newAnswer
-            )
-        {} catch {}
-    }
-
-    function updateRoundInfo(uint32 _roundId) private {
-        uint32 prevId = _roundId.sub(1);
-        rounds[_roundId].answer = rounds[prevId].answer;
-        rounds[_roundId].answeredInRound = rounds[prevId].answeredInRound;
-        rounds[_roundId].updatedAt = uint64(block.timestamp);
-    }
-
-    function updateRoundPrice(uint32 _roundId, int256[] memory _prices)
-        internal
-        returns (bool, int256)
-    {
-        int256 newAnswer = Median.calculateInplace(_prices);
-        rounds[_roundId].answer = newAnswer;
-        rounds[_roundId].updatedAt = uint64(block.timestamp);
-        rounds[_roundId].answeredInRound = _roundId;
-
-        emit AnswerUpdated(newAnswer, _roundId, block.timestamp);
-
-        return (true, newAnswer);
+        Round storage previousRound = rounds[prevRound];
+        for (uint256 i = 0; i < _newAnswers.length; i++) {
+            int256 prevRoundAnswer = previousRound.answers[i];
+            // We do not want the validator to ever prevent reporting, so we limit its
+            // gas usage and catch any errors that may arise.
+            try
+                av.validate{gas: VALIDATOR_GAS_LIMIT}(
+                    prevRound,
+                    prevRoundAnswer,
+                    _roundId,
+                    _newAnswers[i]
+                )
+            {} catch {}
+        }
     }
 
     function payOracle(uint32 _roundId, address _oracle) private {
@@ -288,7 +272,7 @@ contract PriceFeedOracle is
         oracles[_oracle].withdrawable = oracles[_oracle].withdrawable.add(
             payment.mul(uint128(1000) - percentX10SubmitterRewards).div(1000)
         );
-        OraclePayment(_roundId, _oracle, payment);
+        emit OraclePayment(_roundId, _oracle, payment);
     }
 
     /*
@@ -300,9 +284,19 @@ contract PriceFeedOracle is
         virtual
         override
         checkAccess
+        returns (int256[] memory)
+    {
+        return rounds[lastReportedRound].answers;
+    }
+
+    function latestAnswerOfToken(uint32 _tokenIndex)
+        external
+        view
+        override
+        checkAccess
         returns (int256)
     {
-        return rounds[lastReportedRound].answer;
+        return rounds[lastReportedRound].answers[_tokenIndex];
     }
 
     function latestUpdated() public view virtual override returns (uint256) {
@@ -319,12 +313,22 @@ contract PriceFeedOracle is
         virtual
         override
         checkAccess
-        returns (int256)
+        returns (int256[] memory)
     {
         if (validRoundId(_roundId)) {
-            return rounds[uint32(_roundId)].answer;
+            return rounds[uint32(_roundId)].answers;
         }
-        return 0;
+        return new int256[](0);
+    }
+
+    function getAnswerByRoundOfToken(uint32 _tokenIndex, uint256 _roundId)
+        external
+        view
+        override
+        checkAccess
+        returns (int256)
+    {
+        return rounds[uint32(_roundId)].answers[_tokenIndex];
     }
 
     function getUpdatedTime(uint256 _roundId)
@@ -348,19 +352,33 @@ contract PriceFeedOracle is
         checkAccess
         returns (
             uint80 roundId,
-            int256 answer,
-            uint256 updatedAt,
-            uint80 answeredInRound
+            int256[] memory answers,
+            uint256 updatedAt
         )
     {
         Round memory r = rounds[uint32(_roundId)];
 
-        require(
-            r.answeredInRound > 0 && validRoundId(_roundId),
-            V3_NO_DATA_ERROR
-        );
+        require(validRoundId(_roundId), V3_NO_DATA_ERROR);
 
-        return (_roundId, r.answer, r.updatedAt, r.answeredInRound);
+        return (_roundId, r.answers, r.updatedAt);
+    }
+
+    function getRoundInfoOfToken(uint32 _tokenIndex, uint80 _roundId)
+        external
+        view
+        override
+        checkAccess
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 updatedAt
+        )
+    {
+        Round memory r = rounds[uint32(_roundId)];
+
+        require(validRoundId(_roundId), V3_NO_DATA_ERROR);
+
+        return (_roundId, r.answers[_tokenIndex], r.updatedAt);
     }
 
     function latestRoundInfo()
@@ -371,12 +389,29 @@ contract PriceFeedOracle is
         checkAccess
         returns (
             uint80 roundId,
-            int256 answer,
-            uint256 updatedAt,
-            uint80 answeredInRound
+            int256[] memory answers,
+            uint256 updatedAt
         )
     {
         return getRoundInfo(lastReportedRound);
+    }
+
+    function latestRoundInfoOfToken(uint32 _tokenIndex)
+        external
+        view
+        override
+        checkAccess
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 updatedAt
+        )
+    {
+        Round memory r = rounds[uint32(lastReportedRound)];
+
+        require(validRoundId(lastReportedRound), V3_NO_DATA_ERROR);
+
+        return (lastReportedRound, r.answers[_tokenIndex], r.updatedAt);
     }
 
     /**
@@ -430,5 +465,9 @@ contract PriceFeedOracle is
 
     function validRoundId(uint256 _roundId) private pure returns (bool) {
         return _roundId <= ROUND_MAX;
+    }
+
+    function getTokenList() external view returns (string[] memory) {
+        return tokenList;
     }
 }

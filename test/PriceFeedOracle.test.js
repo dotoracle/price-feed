@@ -16,7 +16,7 @@ function readContractAddresses(chainId) {
   return [dtoTokenAddress, priceFeedETHAddress]
 }
 
-describe("Bridge {}", async () => {
+describe("Price Feed Oracle {}", async () => {
 
   it("submit read", async () => {
     let signers = await ethers.getSigners();
@@ -52,8 +52,8 @@ describe("Bridge {}", async () => {
       [],
       signerAddresses,
       signerAddresses,
-      2,
-      2)
+      6,
+      10)
 
     const prices = []
     for (var i = 0; i < signerAddresses.length; i++) {

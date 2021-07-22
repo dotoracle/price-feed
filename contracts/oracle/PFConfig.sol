@@ -2,8 +2,8 @@ pragma solidity ^0.7.0;
 
 
 abstract contract PFConfig {
-  int256 immutable public minSubmissionValue;
-  int256 immutable public maxSubmissionValue;
+  // int256 immutable public minSubmissionValue;
+  // int256 immutable public maxSubmissionValue;
   /**
    * @notice To ensure owner isn't withdrawing required funds as oracles are
    * submitting updates, we enforce that the contract maintains a minimum
@@ -19,8 +19,8 @@ abstract contract PFConfig {
   // confusion around accidentally reading unset values as reported values.
   string constant public V3_NO_DATA_ERROR = "No data present";
 
-  constructor(int256 _minSubmissionValue, int256 _maxSubmissionValue) internal {
-      minSubmissionValue = _minSubmissionValue;
-      maxSubmissionValue = _maxSubmissionValue;
-  }
+  // constructor(int256 _minSubmissionValue, int256 _maxSubmissionValue) internal {
+  //     minSubmissionValue = _minSubmissionValue;
+  //     maxSubmissionValue = _maxSubmissionValue;
+  // }
 }

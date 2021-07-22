@@ -47,10 +47,8 @@ contract OraclePaymentManager is
     );
     constructor(
         address _dto,
-        uint128 _paymentAmount,
-        int256 _minSubmissionValue,
-        int256 _maxSubmissionValue
-    ) public PFConfig(_minSubmissionValue, _maxSubmissionValue) {
+        uint128 _paymentAmount
+    ) public {
         dtoToken = IERC20(_dto);
         updateFutureRounds(_paymentAmount, 0, 0);
     }

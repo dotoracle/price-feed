@@ -22,7 +22,6 @@ contract SWAC is IAccessControl, Ownable {
   event CheckAccessDisabled();
 
   constructor()
-    public
   {
     checkEnabled = true;
   }

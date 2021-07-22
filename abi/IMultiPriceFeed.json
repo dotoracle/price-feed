@@ -1,0 +1,288 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "roundId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes",
+        "name": "current",
+        "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "name": "AnswerUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "description",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "roundId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getAnswerByRound",
+    "outputs": [
+      {
+        "internalType": "int256[]",
+        "name": "",
+        "type": "int256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_tokenIndex",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "roundId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getAnswerByRoundOfToken",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint80",
+        "name": "_roundId",
+        "type": "uint80"
+      }
+    ],
+    "name": "getRoundInfo",
+    "outputs": [
+      {
+        "internalType": "uint80",
+        "name": "roundId",
+        "type": "uint80"
+      },
+      {
+        "internalType": "int256[]",
+        "name": "answers",
+        "type": "int256[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_tokenIndex",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint80",
+        "name": "_roundId",
+        "type": "uint80"
+      }
+    ],
+    "name": "getRoundInfoOfToken",
+    "outputs": [
+      {
+        "internalType": "uint80",
+        "name": "roundId",
+        "type": "uint80"
+      },
+      {
+        "internalType": "int256",
+        "name": "answer",
+        "type": "int256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "roundId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getUpdatedTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "latestAnswer",
+    "outputs": [
+      {
+        "internalType": "int256[]",
+        "name": "",
+        "type": "int256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_tokenIndex",
+        "type": "uint32"
+      }
+    ],
+    "name": "latestAnswerOfToken",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "latestRound",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "latestRoundInfo",
+    "outputs": [
+      {
+        "internalType": "uint80",
+        "name": "roundId",
+        "type": "uint80"
+      },
+      {
+        "internalType": "int256[]",
+        "name": "answers",
+        "type": "int256[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_tokenIndex",
+        "type": "uint32"
+      }
+    ],
+    "name": "latestRoundInfoOfToken",
+    "outputs": [
+      {
+        "internalType": "uint80",
+        "name": "roundId",
+        "type": "uint80"
+      },
+      {
+        "internalType": "int256",
+        "name": "answer",
+        "type": "int256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "latestUpdated",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "version",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

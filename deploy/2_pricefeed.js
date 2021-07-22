@@ -58,25 +58,13 @@ module.exports = async (hre) => {
   let paymentAmount = BigNumber.from(10).pow(18)
   let flagAddress = ethers.constants.AddressZero
 
-  //deploy DeviationChecker
-  const DeviationChecker = await ethers.getContractFactory('DeviationChecker')
-  const DeviationCheckerInstance = await DeviationChecker.deploy(flagAddress, 5000) //5%
-  const deviationChecker = await DeviationCheckerInstance.deployed()
-  log('  - DeviationChecker:         ', deviationChecker.address);
-  deployData['DeviationChecker'] = {
-    abi: getContractAbi('DeviationChecker'),
-    address: deviationChecker.address,
-    deployTransaction: deviationChecker.deployTransaction,
-  }
+  let deviationCheckerAddress = require(`../deployments/${chainId}/DeviationChecker.json`).address
 
-  let _minSubmissionValue = BigNumber.from(10).pow(8) //1$
-  let _maxSubmissionValue = BigNumber.from(10).pow(8).mul(10000) //10000$
   let _description = "ETHPrice"
 
   const PriceFeedOracle = await ethers.getContractFactory('PriceFeedOracle');
   const PriceFeedOracleInstance = await PriceFeedOracle.deploy(
-    dtoTokenAddress, paymentAmount, deviationChecker.address,
-    _minSubmissionValue, _maxSubmissionValue, _description)
+    dtoTokenAddress, paymentAmount, deviationCheckerAddress, _description)
   const priceFeedOracle = await PriceFeedOracleInstance.deployed()
   log('  - PriceFeedOracle:         ', priceFeedOracle.address);
   console.log('oracles', oracles)
@@ -108,4 +96,4 @@ module.exports = async (hre) => {
   log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
 };
 
-module.exports.tags = ['protocol']
+module.exports.tags = ['pricefeed']

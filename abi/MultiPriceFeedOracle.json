@@ -15,11 +15,6 @@
         "internalType": "address",
         "name": "_validator",
         "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "_description",
-        "type": "string"
       }
     ],
     "stateMutability": "nonpayable",
@@ -43,15 +38,15 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "int256",
-        "name": "current",
-        "type": "int256"
-      },
-      {
-        "indexed": true,
         "internalType": "uint256",
         "name": "roundId",
         "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes",
+        "name": "current",
+        "type": "bytes"
       },
       {
         "indexed": false,
@@ -86,31 +81,6 @@
     "anonymous": false,
     "inputs": [],
     "name": "CheckAccessEnabled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "roundId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "startedBy",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "startedAt",
-        "type": "uint256"
-      }
-    ],
-    "name": "NewRound",
     "type": "event"
   },
   {
@@ -256,25 +226,6 @@
       }
     ],
     "name": "RoundSettingsUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "int256",
-        "name": "price",
-        "type": "int256"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint32",
-        "name": "round",
-        "type": "uint32"
-      }
-    ],
-    "name": "SubmissionReceived",
     "type": "event"
   },
   {
@@ -581,6 +532,30 @@
     "name": "getAnswerByRound",
     "outputs": [
       {
+        "internalType": "int256[]",
+        "name": "",
+        "type": "int256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_tokenIndex",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_roundId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getAnswerByRoundOfToken",
+    "outputs": [
+      {
         "internalType": "int256",
         "name": "",
         "type": "int256"
@@ -618,6 +593,40 @@
         "type": "uint80"
       },
       {
+        "internalType": "int256[]",
+        "name": "answers",
+        "type": "int256[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_tokenIndex",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint80",
+        "name": "_roundId",
+        "type": "uint80"
+      }
+    ],
+    "name": "getRoundInfoOfToken",
+    "outputs": [
+      {
+        "internalType": "uint80",
+        "name": "roundId",
+        "type": "uint80"
+      },
+      {
         "internalType": "int256",
         "name": "answer",
         "type": "int256"
@@ -626,11 +635,19 @@
         "internalType": "uint256",
         "name": "updatedAt",
         "type": "uint256"
-      },
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTokenList",
+    "outputs": [
       {
-        "internalType": "uint80",
-        "name": "answeredInRound",
-        "type": "uint80"
+        "internalType": "string[]",
+        "name": "",
+        "type": "string[]"
       }
     ],
     "stateMutability": "view",
@@ -680,8 +697,45 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_description",
+        "type": "string"
+      },
+      {
+        "internalType": "string[]",
+        "name": "_tokenList",
+        "type": "string[]"
+      }
+    ],
+    "name": "initializeTokenList",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "latestAnswer",
+    "outputs": [
+      {
+        "internalType": "int256[]",
+        "name": "",
+        "type": "int256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_tokenIndex",
+        "type": "uint32"
+      }
+    ],
+    "name": "latestAnswerOfToken",
     "outputs": [
       {
         "internalType": "int256",
@@ -715,6 +769,35 @@
         "type": "uint80"
       },
       {
+        "internalType": "int256[]",
+        "name": "answers",
+        "type": "int256[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_tokenIndex",
+        "type": "uint32"
+      }
+    ],
+    "name": "latestRoundInfoOfToken",
+    "outputs": [
+      {
+        "internalType": "uint80",
+        "name": "roundId",
+        "type": "uint80"
+      },
+      {
         "internalType": "int256",
         "name": "answer",
         "type": "int256"
@@ -723,11 +806,6 @@
         "internalType": "uint256",
         "name": "updatedAt",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint80",
-        "name": "answeredInRound",
-        "type": "uint80"
       }
     ],
     "stateMutability": "view",
@@ -963,6 +1041,25 @@
         "internalType": "uint128",
         "name": "remainVesting",
         "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "tokenList",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
