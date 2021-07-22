@@ -24,64 +24,64 @@ const oraclesToAdd = [
 ]
 
 module.exports = async (hre) => {
-    const { ethers, upgrades, getNamedAccounts } = hre;
-    const BigNumber = ethers.BigNumber
-    const { deployer, protocolOwner, trustedForwarder, dtoToken } = await getNamedAccounts();
-    const network = await hre.network;
-    const deployData = {};
+  const { ethers, upgrades, getNamedAccounts } = hre;
+  const BigNumber = ethers.BigNumber
+  const { deployer, protocolOwner, trustedForwarder, dtoToken } = await getNamedAccounts();
+  const network = await hre.network;
+  const deployData = {};
 
-    const chainId = chainIdByName(network.name);
+  const chainId = chainIdByName(network.name);
 
-    log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
-    log('DTO Multichain Oracle Protocol - Price Feed Contract Deployment');
-    log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
-    log('  dtoToken: ', dtoToken);
+  log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
+  log('DTO Multichain Oracle Protocol - Price Feed Contract Deployment');
+  log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
+  log('  dtoToken: ', dtoToken);
 
-    log('  Using Network: ', chainNameById(chainId));
-    log('  Using Accounts:');
-    log('  - Deployer:          ', deployer);
-    log('  - network id:          ', chainId);
-    log('  - Owner:             ', protocolOwner);
-    log('  - Trusted Forwarder: ', trustedForwarder);
-    log(' ');
+  log('  Using Network: ', chainNameById(chainId));
+  log('  Using Accounts:');
+  log('  - Deployer:          ', deployer);
+  log('  - network id:          ', chainId);
+  log('  - Owner:             ', protocolOwner);
+  log('  - Trusted Forwarder: ', trustedForwarder);
+  log(' ');
 
-    log('  Deploying PriceFeedOracle...');
-    let dtoTokenAddress
-    let oracles = []
-    if (chainId == 31337) {
-      dtoTokenAddress = require(`../deployments/${chainId}/DTOToken.json`).address
-      oracles.push(...oraclesToAdd)
-    } else {
-      dtoTokenAddress = require(`../deployments/${chainId}/DTOToken.json`).address
-      oracles.push(...oraclesToAdd)
-    }
+  log('  Deploying PriceFeedOracle...');
+  let dtoTokenAddress
+  let oracles = []
+  if (chainId == 31337) {
+    dtoTokenAddress = require(`../deployments/${chainId}/DTOToken.json`).address
+  } else {
+    dtoTokenAddress = require(`../deployments/${chainId}/DTOToken.json`).address
+    oracles.push(...oraclesToAdd)
+  }
 
-    let paymentAmount = BigNumber.from(10).pow(18)
-    let flagAddress = ethers.constants.AddressZero
+  let paymentAmount = BigNumber.from(10).pow(18)
+  let flagAddress = ethers.constants.AddressZero
 
-    //deploy DeviationChecker
-    const DeviationChecker = await ethers.getContractFactory('DeviationChecker')
-    const DeviationCheckerInstance = await DeviationChecker.deploy(flagAddress, 5000) //5%
-    const deviationChecker = await DeviationCheckerInstance.deployed()
-    log('  - DeviationChecker:         ', deviationChecker.address);
-    deployData['DeviationChecker'] = {
-      abi: getContractAbi('DeviationChecker'),
-      address: deviationChecker.address,
-      deployTransaction: deviationChecker.deployTransaction,
-    }
+  //deploy DeviationChecker
+  const DeviationChecker = await ethers.getContractFactory('DeviationChecker')
+  const DeviationCheckerInstance = await DeviationChecker.deploy(flagAddress, 5000) //5%
+  const deviationChecker = await DeviationCheckerInstance.deployed()
+  log('  - DeviationChecker:         ', deviationChecker.address);
+  deployData['DeviationChecker'] = {
+    abi: getContractAbi('DeviationChecker'),
+    address: deviationChecker.address,
+    deployTransaction: deviationChecker.deployTransaction,
+  }
 
-    let _minSubmissionValue = BigNumber.from(10).pow(8) //1$
-    let _maxSubmissionValue = BigNumber.from(10).pow(8).mul(10000) //10000$
-    let _description = "ETHPrice"
+  let _minSubmissionValue = BigNumber.from(10).pow(8) //1$
+  let _maxSubmissionValue = BigNumber.from(10).pow(8).mul(10000) //10000$
+  let _description = "ETHPrice"
 
-    const PriceFeedOracle = await ethers.getContractFactory('PriceFeedOracle');
-    const PriceFeedOracleInstance = await PriceFeedOracle.deploy(
-        dtoTokenAddress, paymentAmount, deviationChecker.address, 
-        _minSubmissionValue, _maxSubmissionValue, _description)
-    const priceFeedOracle = await PriceFeedOracleInstance.deployed()
-    log('  - PriceFeedOracle:         ', priceFeedOracle.address);
-    console.log('oracles', oracles)
+  const PriceFeedOracle = await ethers.getContractFactory('PriceFeedOracle');
+  const PriceFeedOracleInstance = await PriceFeedOracle.deploy(
+    dtoTokenAddress, paymentAmount, deviationChecker.address,
+    _minSubmissionValue, _maxSubmissionValue, _description)
+  const priceFeedOracle = await PriceFeedOracleInstance.deployed()
+  log('  - PriceFeedOracle:         ', priceFeedOracle.address);
+  console.log('oracles', oracles)
 
+  if (chainId != 31337) {
     const ERC20Mock = await ethers.getContractFactory('ERC20Mock')
     const tokenContract = await ERC20Mock.attach(dtoTokenAddress)
     await tokenContract.transfer(priceFeedOracle.address, BigNumber.from(10).pow(18).mul(10000))
@@ -91,19 +91,21 @@ module.exports = async (hre) => {
       oracles,
       6,
       10,
-      {gasLimit: 10000000}
+      { gasLimit: 10000000 }
     )
+  }
 
-    deployData['PriceFeedOracle' + _description] = {
-      abi: getContractAbi('PriceFeedOracle'),
-      address: priceFeedOracle.address,
-      deployTransaction: priceFeedOracle.deployTransaction,
-    }
 
-    saveDeploymentData(chainId, deployData);
-    log('\n  Contract Deployment Data saved to "deployments" directory.');
+  deployData['PriceFeedOracle' + _description] = {
+    abi: getContractAbi('PriceFeedOracle'),
+    address: priceFeedOracle.address,
+    deployTransaction: priceFeedOracle.deployTransaction,
+  }
 
-    log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
+  saveDeploymentData(chainId, deployData);
+  log('\n  Contract Deployment Data saved to "deployments" directory.');
+
+  log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n');
 };
 
 module.exports.tags = ['protocol']

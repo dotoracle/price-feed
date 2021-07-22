@@ -19,7 +19,7 @@ abstract contract OracleFundManager is OracleManager, Ownable {
     uint128 public paymentAmount;
 
     event AvailableFundsUpdated(uint256 indexed amount);
-
+    event OraclePayment(uint32 roundId, address indexed oracle, uint128 amount);
     /**
      * @notice transfers the oracle's DTO to another address. Can only be called
      * by the oracle's admin.
