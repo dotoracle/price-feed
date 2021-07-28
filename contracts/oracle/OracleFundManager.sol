@@ -20,30 +20,6 @@ abstract contract OracleFundManager is OracleManager, Ownable {
 
     event AvailableFundsUpdated(uint256 indexed amount);
     event OraclePayment(uint32 roundId, address indexed oracle, uint128 amount);
-    /**
-     * @notice transfers the oracle's DTO to another address. Can only be called
-     * by the oracle's admin.
-     * @param _oracle is the oracle whose DTO is transferred
-     * @param _recipient is the address to send the DTO to
-     * @param _amount is the amount of DTO to send
-     */
-    function withdrawPayment(
-        address _oracle,
-        address _recipient,
-        uint256 _amount
-    ) external {
-        require(oracles[_oracle].admin == msg.sender, "only callable by admin");
-
-        // Safe to downcast _amount because the total amount of DTO is less than 2^128.
-        uint128 amount = uint128(_amount);
-        uint128 available = oracles[_oracle].withdrawable;
-        require(available >= amount, "insufficient withdrawable funds");
-
-        oracles[_oracle].withdrawable = available.sub(amount);
-        recordedFunds.allocated = recordedFunds.allocated.sub(amount);
-
-        dtoToken.safeTransfer(_recipient, uint256(amount));
-    }
 
     /**
      * @notice the amount of payment yet to be withdrawn by oracles
@@ -73,17 +49,6 @@ abstract contract OracleFundManager is OracleManager, Ownable {
             recordedFunds.available = uint128(nowAvailable);
             emit AvailableFundsUpdated(nowAvailable);
         }
-    }
-
-    /**
-     * @notice query the available amount of DTO for an oracle to withdraw
-     */
-    function withdrawablePayment(address _oracle)
-        external
-        view
-        returns (uint256)
-    {
-        return oracles[_oracle].withdrawable;
     }
 
     /**

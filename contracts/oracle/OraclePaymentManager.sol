@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
@@ -23,11 +22,7 @@ import "../lib/access/SRAC.sol";
  * single answer. The latest aggregated answer is exposed as well as historical
  * answers and their updated at timestamp.
  */
-contract OraclePaymentManager is
-    PriceChecker,
-    OracleFundManager,
-    PFConfig
-{
+contract OraclePaymentManager is PriceChecker, OracleFundManager, PFConfig {
     using SafeMath for uint256;
     using SafeMath128 for uint128;
     using SafeMath64 for uint64;
@@ -37,20 +32,47 @@ contract OraclePaymentManager is
 
     uint32 internal lastReportedRound;
 
-    uint32 public maxSubmissionCount;
-    uint32 public minSubmissionCount;
+    event RoundSettingsUpdated(uint128 indexed paymentAmount);
 
-    event RoundSettingsUpdated(
-        uint128 indexed paymentAmount,
-        uint32 indexed minSubmissionCount,
-        uint32 indexed maxSubmissionCount
-    );
-    constructor(
-        address _dto,
-        uint128 _paymentAmount
-    ) public {
+    function initialize(address _dto, uint128 _paymentAmount) internal {
         dtoToken = IERC20(_dto);
-        updateFutureRounds(_paymentAmount, 0, 0);
+        updateFutureRounds(_paymentAmount);
+    }
+
+    /**
+     * @notice transfers the oracle's DTO to another address. Can only be called
+     * by the oracle's admin.
+     * @param _oracle is the oracle whose DTO is transferred
+     * @param _recipient is the address to send the DTO to
+     * @param _amount is the amount of DTO to send
+     */
+    function withdrawPayment(
+        address _oracle,
+        address _recipient,
+        uint256 _amount
+    ) external {
+        require(oracles[_oracle].admin == msg.sender, "only callable by admin");
+
+        // Safe to downcast _amount because the total amount of DTO is less than 2^128.
+        uint128 amount = uint128(_amount);
+        uint128 available = oracles[_oracle].withdrawable;
+        require(available >= amount, "insufficient withdrawable funds");
+
+        oracles[_oracle].withdrawable = available.sub(amount);
+        recordedFunds.allocated = recordedFunds.allocated.sub(amount);
+
+        dtoToken.safeTransfer(_recipient, uint256(amount));
+    }
+
+    /**
+     * @notice query the available amount of DTO for an oracle to withdraw
+     */
+    function withdrawablePayment(address _oracle)
+        external
+        view
+        returns (uint256)
+    {
+        return oracles[_oracle].withdrawable;
     }
 
     /*
@@ -64,15 +86,11 @@ contract OraclePaymentManager is
      * @param _added is the list of addresses for the new Oracles being added
      * @param _addedAdmins is the admin addresses for the new respective _added
      * list. Only this address is allowed to access the respective oracle's funds
-     * @param _minSubmissions is the new minimum submission count for each round
-     * @param _maxSubmissions is the new maximum submission count for each round
      */
     function changeOracles(
         address[] calldata _removed,
         address[] calldata _added,
-        address[] calldata _addedAdmins,
-        uint32 _minSubmissions,
-        uint32 _maxSubmissions
+        address[] calldata _addedAdmins
     ) external onlyOwner() {
         updateAvailableFunds();
         for (uint256 i = 0; i < _removed.length; i++) {
@@ -92,7 +110,7 @@ contract OraclePaymentManager is
             addOracle(_added[i], _addedAdmins[i]);
         }
 
-        updateFutureRounds(paymentAmount, _minSubmissions, _maxSubmissions);
+        updateFutureRounds(paymentAmount);
     }
 
     function addOracle(address _oracle, address _admin) internal {
@@ -133,37 +151,16 @@ contract OraclePaymentManager is
      * @notice update the round and payment related parameters for subsequent
      * rounds
      * @param _paymentAmount is the payment amount for subsequent rounds
-     * @param _minSubmissions is the new minimum submission count for each round
-     * @param _maxSubmissions is the new maximum submission count for each round
      */
-    function updateFutureRounds(
-        uint128 _paymentAmount,
-        uint32 _minSubmissions,
-        uint32 _maxSubmissions
-    ) public onlyOwner() {
-        uint32 oracleNum = oracleCount(); // Save on storage reads
-        require(
-            _maxSubmissions >= _minSubmissions,
-            "max must equal/exceed min"
-        );
-        require(oracleNum >= _maxSubmissions, "max cannot exceed total");
+    function updateFutureRounds(uint128 _paymentAmount) public onlyOwner() {
         require(
             recordedFunds.available >= computeRequiredReserve(_paymentAmount),
             "PriceFeedOracle::updateFutureRounds insufficient funds for payment"
         );
-        if (oracleCount() > 0) {
-            require(_minSubmissions > 0, "min must be greater than 0");
-        }
 
         paymentAmount = _paymentAmount;
-        minSubmissionCount = _minSubmissions;
-        maxSubmissionCount = _maxSubmissions;
 
-        emit RoundSettingsUpdated(
-            paymentAmount,
-            _minSubmissions,
-            _maxSubmissions
-        );
+        emit RoundSettingsUpdated(paymentAmount);
     }
 
     /**

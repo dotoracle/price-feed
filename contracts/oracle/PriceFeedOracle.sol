@@ -14,6 +14,7 @@ import "./OraclePaymentManager.sol";
 import "./PFConfig.sol";
 import "../lib/access/EOACheck.sol";
 import "../lib/access/SRAC.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 
 /**
  * @title The Prepaid Oracle contract
@@ -26,7 +27,8 @@ import "../lib/access/SRAC.sol";
 contract PriceFeedOracle is
     IPriceFeed,
     OraclePaymentManager,
-    SRAC
+    SRAC,
+    Initializable
 {
     using SafeMath for uint256;
     using SafeMath128 for uint128;
@@ -48,7 +50,7 @@ contract PriceFeedOracle is
         uint128 releasable;
         uint128 remainVesting;
     }
-    
+
     string public override description;
 
     uint256 public constant override version = 1;
@@ -61,20 +63,13 @@ contract PriceFeedOracle is
 
     event SubmissionReceived(int256 price, uint32 indexed round);
 
-    /**
-     * @notice set up the aggregator with initial configuration
-     * @param _dto The address of the DTO token
-     * @param _paymentAmount The amount paid of DTO paid to each oracle per submission, in wei (units of 10⁻¹⁸ DTO)
-     * @param _validator is an optional contract address for validating
-     * external validation of answers
-     * @param _description a short description of what is being reported
-     */
-    constructor(
+    function initialize(
         address _dto,
         uint128 _paymentAmount,
         address _validator,
         string memory _description
-    ) public OraclePaymentManager(_dto, _paymentAmount) {
+    ) public initializer {
+        super.initialize(_dto, _paymentAmount);
         setChecker(_validator);
         description = _description;
         rounds[0].updatedAt = uint64(block.timestamp);
@@ -120,11 +115,6 @@ contract PriceFeedOracle is
         );
 
         require(
-            _prices.length >= minSubmissionCount,
-            "PriceFeedOracle::submit submissions under min submission count"
-        );
-
-        require(
             _roundId == lastReportedRound.add(1),
             "PriceFeedOracle::submit Invalid RoundId"
         );
@@ -134,17 +124,18 @@ contract PriceFeedOracle is
             abi.encodePacked(
                 "\x19Ethereum Signed Message:\n32",
                 keccak256(
-                    abi.encode(_roundId, address(this), _prices, _deadline, description)
+                    abi.encode(
+                        _roundId,
+                        address(this),
+                        _prices,
+                        _deadline,
+                        description
+                    )
                 )
             )
         );
         for (uint256 i = 0; i < _prices.length; i++) {
-            address signer = ecrecover(
-                message,
-                v[i],
-                r[i],
-                s[i]
-            );
+            address signer = ecrecover(message, v[i], r[i], s[i]);
             //the off-chain network dotoracle must verify there is no duplicate oracles in the submissions
             require(
                 isOracleEnabled(signer),

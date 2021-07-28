@@ -4,6 +4,7 @@ contract OracleManager {
     struct OracleStatus {
         uint128 withdrawable;
         uint32 startingRound;
+        uint32 lastFundUpdatedRound;
         uint32 endingRound;
         uint16 index;
         address admin;

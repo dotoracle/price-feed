@@ -31,6 +31,7 @@
     "hardhat-deploy": "^0.7.10",
     "hardhat-deploy-ethers": "*",
     "sleep-promise": "^9.1.0",
-    "solidity-coverage": "^0.7.16"
+    "solidity-coverage": "^0.7.16",
+    "truffle-privatekey-provider": "^1.5.0"
   }
 }

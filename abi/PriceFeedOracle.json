@@ -1,31 +1,5 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_dto",
-        "type": "address"
-      },
-      {
-        "internalType": "uint128",
-        "name": "_paymentAmount",
-        "type": "uint128"
-      },
-      {
-        "internalType": "address",
-        "name": "_validator",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "_description",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -241,18 +215,6 @@
         "internalType": "uint128",
         "name": "paymentAmount",
         "type": "uint128"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint32",
-        "name": "minSubmissionCount",
-        "type": "uint32"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint32",
-        "name": "maxSubmissionCount",
-        "type": "uint32"
       }
     ],
     "name": "RoundSettingsUpdated",
@@ -468,16 +430,6 @@
         "internalType": "address[]",
         "name": "_addedAdmins",
         "type": "address[]"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_minSubmissions",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_maxSubmissions",
-        "type": "uint32"
       }
     ],
     "name": "changeOracles",
@@ -680,6 +632,34 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_dto",
+        "type": "address"
+      },
+      {
+        "internalType": "uint128",
+        "name": "_paymentAmount",
+        "type": "uint128"
+      },
+      {
+        "internalType": "address",
+        "name": "_validator",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_description",
+        "type": "string"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "latestAnswer",
     "outputs": [
@@ -741,32 +721,6 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "maxSubmissionCount",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "minSubmissionCount",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
       }
     ],
     "stateMutability": "view",
@@ -1025,16 +979,6 @@
         "internalType": "uint128",
         "name": "_paymentAmount",
         "type": "uint128"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_minSubmissions",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_maxSubmissions",
-        "type": "uint32"
       }
     ],
     "name": "updateFutureRounds",

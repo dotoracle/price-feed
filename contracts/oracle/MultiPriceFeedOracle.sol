@@ -61,26 +61,16 @@ contract MultiPriceFeedOracle is
 
     mapping(uint32 => Round) internal rounds;
 
-    /**
-     * @notice set up the aggregator with initial configuration
-     * @param _dto The address of the DTO token
-     * @param _paymentAmount The amount paid of DTO paid to each oracle per submission, in wei (units of 10⁻¹⁸ DTO)
-     * @param _validator is an optional contract address for validating
-     * external validation of answers
-     */
-    constructor(
+    function initialize(
         address _dto,
         uint128 _paymentAmount,
-        address _validator
-    ) public OraclePaymentManager(_dto, _paymentAmount) {
-        setChecker(_validator);
-        rounds[0].updatedAt = uint64(block.timestamp);
-    }
-
-    function initializeTokenList(
+        address _validator,
         string memory _description,
         string[] memory _tokenList
     ) external initializer {
+        super.initialize(_dto, _paymentAmount);
+        setChecker(_validator);
+        rounds[0].updatedAt = uint64(block.timestamp);
         description = _description;
         tokenList = _tokenList;
     }
@@ -123,11 +113,6 @@ contract MultiPriceFeedOracle is
             v.length.mul(100).div(oracleAddresses.length) >=
                 MIN_THRESHOLD_PERCENT,
             "PriceFeedOracle::submit Number of submissions under threshold"
-        );
-
-        require(
-            r.length >= minSubmissionCount,
-            "PriceFeedOracle::submit submissions under min submission count"
         );
 
         require(
