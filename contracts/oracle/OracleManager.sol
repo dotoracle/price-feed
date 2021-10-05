@@ -2,14 +2,15 @@ pragma solidity ^0.7.0;
 
 contract OracleManager {
     struct OracleStatus {
-        uint128 withdrawable;
+        uint128 paymentDebt;
         uint32 startingRound;
-        uint32 lastFundUpdatedRound;
         uint32 endingRound;
         uint16 index;
         address admin;
         address pendingAdmin;
     }
+
+    uint128 public accPaymentPerOracle;
 
     mapping(address => OracleStatus) internal oracles;
     address[] internal oracleAddresses;

@@ -55,13 +55,13 @@ contract OraclePaymentManager is PriceChecker, OracleFundManager, PFConfig {
 
         // Safe to downcast _amount because the total amount of DTO is less than 2^128.
         uint128 amount = uint128(_amount);
-        uint128 available = oracles[_oracle].withdrawable;
+        uint128 available = isOracleEnabled(_oracle) ? accPaymentPerOracle.sub(oracles[_oracle].paymentDebt) : 0;
         require(available >= amount, "insufficient withdrawable funds");
 
-        oracles[_oracle].withdrawable = available.sub(amount);
+        oracles[_oracle].paymentDebt = oracles[_oracle].paymentDebt.add(amount);
         recordedFunds.allocated = recordedFunds.allocated.sub(amount);
-
         dtoToken.safeTransfer(_recipient, uint256(amount));
+        updateAvailableFunds();
     }
 
     /**
@@ -72,7 +72,7 @@ contract OraclePaymentManager is PriceChecker, OracleFundManager, PFConfig {
         view
         returns (uint256)
     {
-        return oracles[_oracle].withdrawable;
+        return isOracleEnabled(_oracle) ? accPaymentPerOracle.sub(oracles[_oracle].paymentDebt): 0;
     }
 
     /*
@@ -125,6 +125,7 @@ contract OraclePaymentManager is PriceChecker, OracleFundManager, PFConfig {
 
         oracles[_oracle].startingRound = getStartingRound(_oracle);
         oracles[_oracle].endingRound = ROUND_MAX;
+        oracles[_oracle].paymentDebt = accPaymentPerOracle;
         oracles[_oracle].index = uint16(oracleAddresses.length);
         oracleAddresses.push(_oracle);
         oracles[_oracle].admin = _admin;
@@ -135,6 +136,15 @@ contract OraclePaymentManager is PriceChecker, OracleFundManager, PFConfig {
 
     function removeOracle(address _oracle) internal {
         require(isOracleEnabled(_oracle), "oracle not enabled");
+
+        //sending remaining payment to admin
+        uint128 remainingPayment = accPaymentPerOracle.sub(oracles[_oracle].paymentDebt);
+        if (remainingPayment > 0) {
+            recordedFunds.allocated = recordedFunds.allocated.sub(remainingPayment);
+            dtoToken.safeTransfer(oracles[_oracle].admin, uint256(remainingPayment));
+            updateAvailableFunds();
+        }
+        oracles[_oracle].paymentDebt = accPaymentPerOracle;
 
         oracles[_oracle].endingRound = lastReportedRound.add(1);
         address tail = oracleAddresses[uint256(oracleCount()).sub(1)];

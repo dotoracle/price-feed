@@ -149,7 +149,7 @@ contract MultiPriceFeedOracleV2 is
             abi.encodePacked(_prices),
             block.timestamp
         );
-        
+
         //pay submitter rewards for incentivizations
         uint128 submitterRewardsToAppend = uint128(
             uint128(oracleCount())
@@ -203,6 +203,7 @@ contract MultiPriceFeedOracleV2 is
             recordedFunds.allocated = recordedFunds.allocated.sub(
                 submitterRewards[_submitter].releasable
             );
+            updateAvailableFunds();
             submitterRewards[_submitter].releasable = 0;
         }
     }
@@ -241,12 +242,8 @@ contract MultiPriceFeedOracleV2 is
         funds.available = funds.available.sub(payment.mul(oracleCount()));
         funds.allocated = funds.allocated.add(payment.mul(oracleCount()));
         recordedFunds = funds;
-        for(uint i = 0; i < oracleCount(); i++) {
-            address _oracle = oracleAddresses[i];
-            oracles[_oracle].withdrawable = oracles[_oracle].withdrawable.add(
-                payment.mul(uint128(1000) - percentX10SubmitterRewards).div(1000)
-            );
-        }
+        updateAvailableFunds();
+        accPaymentPerOracle = accPaymentPerOracle.add(payment.mul(uint128(1000) - percentX10SubmitterRewards).div(1000));
         emit OraclePaymentV2(_roundId, payment);
     }
 

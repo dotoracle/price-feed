@@ -148,6 +148,8 @@ contract MultiPriceFeedOracle is
             );
             payOracle(_roundId, signer);
         }
+        accPaymentPerOracle = accPaymentPerOracle.add(paymentAmount.mul(uint128(1000) - percentX10SubmitterRewards).div(1000));
+        updateAvailableFunds();
         emit AvailableFundsUpdated(recordedFunds.available);
 
         currentRoundData.answers = _prices;
@@ -213,6 +215,7 @@ contract MultiPriceFeedOracle is
             recordedFunds.allocated = recordedFunds.allocated.sub(
                 submitterRewards[_submitter].releasable
             );
+            updateAvailableFunds();
             submitterRewards[_submitter].releasable = 0;
         }
     }
@@ -251,9 +254,6 @@ contract MultiPriceFeedOracle is
         funds.available = funds.available.sub(payment);
         funds.allocated = funds.allocated.add(payment);
         recordedFunds = funds;
-        oracles[_oracle].withdrawable = oracles[_oracle].withdrawable.add(
-            payment.mul(uint128(1000) - percentX10SubmitterRewards).div(1000)
-        );
         emit OraclePayment(_roundId, _oracle, payment);
     }
 
